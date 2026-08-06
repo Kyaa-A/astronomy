@@ -982,7 +982,7 @@ export class CelestialViewer {
       this.controls.maxDistance = 85;
       this.controls.minDistance = 2.5;
       this.applyModes();
-      this.tweenCamera(new THREE.Vector3(0, 0.4, 13.5), HOME_TARGET);
+      this.tweenCamera(new THREE.Vector3(0, 24.5, 32.5), HOME_TARGET);
     } else {
       this.controls.maxDistance = 13;
       this.controls.minDistance = 4.6;
@@ -1000,7 +1000,7 @@ export class CelestialViewer {
     const mesh = this.orbitPlanetMeshes.get(planetId);
     if (mesh) {
       const worldPos = mesh.getWorldPosition(new THREE.Vector3());
-      const camPos = new THREE.Vector3(worldPos.x * 0.65, 0.8, Math.max(8.5, worldPos.z * 0.65 + 6.0));
+      const camPos = new THREE.Vector3(worldPos.x * 0.65, 12.0, Math.max(18.5, worldPos.z * 0.65 + 16.0));
       this.tweenCamera(camPos, new THREE.Vector3(worldPos.x * 0.35, 0, worldPos.z * 0.35));
     }
   }
@@ -1012,12 +1012,12 @@ export class CelestialViewer {
 
   focusInnerPlanets() {
     if (!this.orbiting) return;
-    this.tweenCamera(new THREE.Vector3(0, 0.5, 6.2), HOME_TARGET);
+    this.tweenCamera(new THREE.Vector3(0, 10.5, 14.2), HOME_TARGET);
   }
 
   resetOrbitView() {
     if (!this.orbiting) return;
-    this.tweenCamera(new THREE.Vector3(0, 0.4, 13.5), HOME_TARGET);
+    this.tweenCamera(new THREE.Vector3(0, 24.5, 32.5), HOME_TARGET);
   }
   setAtmosphere(enabled: boolean) {
     this.atmosphereVisible = enabled;

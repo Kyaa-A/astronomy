@@ -311,8 +311,8 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
         </div>
       )}
 
-      {/* Surface hotspot markers (ONLY rendered when NO dedicated 3D mode is active) */}
-      {labels && !layers && !atmosphere && !continents && !oceanSystem && !magnetosphere && labelPositions.length > 0 && (
+      {/* Surface hotspot markers (ONLY rendered when NO dedicated 3D mode is active and NOT in Orbit mode) */}
+      {labels && !layers && !atmosphere && !continents && !oceanSystem && !magnetosphere && !orbiting && labelPositions.length > 0 && (
         <div className="label-overlay" aria-hidden="true">
           {labelPositions.map((lp) => {
             const isSelected = selected?.id === lp.id;
