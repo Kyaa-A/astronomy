@@ -323,11 +323,7 @@ button:disabled { cursor: not-allowed; opacity: 0.68; }
 .orbit-planet-tag small { font-size: 11px; font-weight: 400; color: color-mix(in srgb, var(--planet-color, var(--cyan)) 80%, #fff); margin-top: 1px; }
 .orbit-planet-tag.compact small { display: none; }
 
-/* Desktop Collapsible Information Panel */
-.info-panel { position: relative; }
-.collapse-panel-btn { position: absolute; top: 18px; left: -16px; z-index: 30; width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line-strong); background: rgba(12,16,36,.95); color: var(--cyan); display: grid; place-items: center; cursor: pointer; backdrop-filter: blur(12px); box-shadow: 0 4px 16px rgba(0,0,0,.5); transition: all .18s ease; }
-.collapse-panel-btn:hover { border-color: var(--cyan); background: rgba(112,220,255,.15); color: #fff; }
-.info-panel.collapsed { width: 48px; min-width: 48px; padding: 0; overflow: hidden; background: rgba(8,11,27,.6); border-left: 1px solid rgba(255,255,255,.08); }
+
 
 @media (max-width: 640px) {
   .feature-diagram-stage { grid-template-columns: 1fr; }

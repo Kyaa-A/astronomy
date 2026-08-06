@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import gsap from "gsap";
 import {
-  ArrowRight, BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, CircleHelp, Compass,
+  ArrowRight, BookOpen, Check, ChevronDown, CircleHelp, Compass,
   FileText, Heart, LibraryBig, Menu, NotebookPen, Orbit, Play, Rocket,
   Search, Sparkles, Telescope, X,
 } from "lucide-react";
@@ -35,7 +35,6 @@ export function CelestialApp() {
   const [favorites, setFavorites] = useState<Set<CelestialId>>(() => new Set(["earth"]));
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [infoPanelCollapsed, setInfoPanelCollapsed] = useState(false);
   const [modal, setModal] = useState<Modal>(null);
   const [compareId, setCompareId] = useState<CelestialId>("jupiter");
   const [compareOpen, setCompareOpen] = useState(false);
@@ -140,65 +139,52 @@ export function CelestialApp() {
           }}
         />
 
-        <aside className={`info-panel ${infoPanelCollapsed ? "collapsed" : ""}`} ref={contentRef} aria-live="polite">
-          <button
-            type="button"
-            className="collapse-panel-btn"
-            onClick={() => setInfoPanelCollapsed(!infoPanelCollapsed)}
-            title={infoPanelCollapsed ? "Expand panel" : "Collapse panel"}
-          >
-            {infoPanelCollapsed ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
-          </button>
+        <aside className="info-panel" ref={contentRef} aria-live="polite">
+          <div className="info-kicker" data-reveal><span style={{ background: object.accent }} /> {object.category} · selected object</div>
+          <div className="info-title" data-reveal>
+            <div><h1>{object.name}</h1><em>{object.subtitle}</em></div>
+            <ObjectGlyph object={object} />
+          </div>
+          <p className="description" data-reveal>{object.description}</p>
+          
+          <details className="image-credit" data-reveal>
+            <summary>Image and 3D sources</summary>
+            <a href={object.image.sourceUrl} target="_blank" rel="noreferrer">Portrait · {object.image.credit}</a>
+            <a href={object.texture.sourceUrl} target="_blank" rel="noreferrer">3D map · {object.texture.credit}</a>
+            <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">Texture license · {object.texture.license}</a>
+          </details>
 
-          {!infoPanelCollapsed && (
-            <>
-              <div className="info-kicker" data-reveal><span style={{ background: object.accent }} /> {object.category} · selected object</div>
-              <div className="info-title" data-reveal>
-                <div><h1>{object.name}</h1><em>{object.subtitle}</em></div>
-                <ObjectGlyph object={object} />
-              </div>
-              <p className="description" data-reveal>{object.description}</p>
-              
-              <details className="image-credit" data-reveal>
-                <summary>Image and 3D sources</summary>
-                <a href={object.image.sourceUrl} target="_blank" rel="noreferrer">Portrait · {object.image.credit}</a>
-                <a href={object.texture.sourceUrl} target="_blank" rel="noreferrer">3D map · {object.texture.credit}</a>
-                <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">Texture license · {object.texture.license}</a>
-              </details>
+          <div className="divider" />
 
-              <div className="divider" />
+          <h2 data-reveal>Orbit characteristics</h2>
+          <dl className="fact-grid">
+            <div data-reveal><dt>Average distance from Sun</dt><dd>{object.facts.avgDistance ?? object.facts.distance}</dd></div>
+            <div data-reveal><dt>Orbital period</dt><dd>{object.facts.orbitalPeriod}</dd></div>
+            {object.facts.orbitalSpeed && <div data-reveal><dt>Orbital speed</dt><dd>{object.facts.orbitalSpeed}</dd></div>}
+            {object.facts.eccentricity && <div data-reveal><dt>Eccentricity</dt><dd>{object.facts.eccentricity}</dd></div>}
+          </dl>
 
-              <h2 data-reveal>Orbit characteristics</h2>
-              <dl className="fact-grid">
-                <div data-reveal><dt>Average distance from Sun</dt><dd>{object.facts.avgDistance ?? object.facts.distance}</dd></div>
-                <div data-reveal><dt>Orbital period</dt><dd>{object.facts.orbitalPeriod}</dd></div>
-                {object.facts.orbitalSpeed && <div data-reveal><dt>Orbital speed</dt><dd>{object.facts.orbitalSpeed}</dd></div>}
-                {object.facts.eccentricity && <div data-reveal><dt>Eccentricity</dt><dd>{object.facts.eccentricity}</dd></div>}
-              </dl>
+          <div className="divider" />
 
-              <div className="divider" />
+          <h2 data-reveal>Physical properties</h2>
+          <dl className="fact-grid">
+            <div data-reveal><dt>Diameter</dt><dd>{object.facts.diameter}</dd></div>
+            <div data-reveal><dt>Mass</dt><dd>{object.facts.mass}</dd></div>
+            <div data-reveal><dt>Day length</dt><dd>{object.facts.dayLength}</dd></div>
+            <div data-reveal><dt>Moons</dt><dd>{object.facts.moons}</dd></div>
+            <div data-reveal><dt>Surface gravity</dt><dd>{object.facts.gravity}</dd></div>
+            <div data-reveal><dt>Avg. temperature</dt><dd>{object.facts.temperature}</dd></div>
+          </dl>
 
-              <h2 data-reveal>Physical properties</h2>
-              <dl className="fact-grid">
-                <div data-reveal><dt>Diameter</dt><dd>{object.facts.diameter}</dd></div>
-                <div data-reveal><dt>Mass</dt><dd>{object.facts.mass}</dd></div>
-                <div data-reveal><dt>Day length</dt><dd>{object.facts.dayLength}</dd></div>
-                <div data-reveal><dt>Moons</dt><dd>{object.facts.moons}</dd></div>
-                <div data-reveal><dt>Surface gravity</dt><dd>{object.facts.gravity}</dd></div>
-                <div data-reveal><dt>Avg. temperature</dt><dd>{object.facts.temperature}</dd></div>
-              </dl>
-
-              <div className="composition" data-reveal><small>Composition</small><p>{object.facts.composition}</p></div>
-              <div className="science-note" data-reveal><Telescope size={17} /><p><b>Scientific significance</b>{object.significance}</p></div>
-              <div className="discovery-note" data-reveal><Sparkles size={16} /><p><b>Did you know?</b>{object.didYouKnow}</p></div>
-              <button className="primary-action" data-reveal onClick={() => setModal("lesson")}><BookOpen size={16} /> View lesson <ArrowRight size={15} /></button>
-              <div className="action-grid" data-reveal>
-                <button className={orbiting ? "active" : ""} onClick={() => setOrbiting(!orbiting)}><Play size={15} /> {orbiting ? "Surface view" : "Animate orbit"}</button>
-                <button onClick={() => setModal("quiz")}><CircleHelp size={15} /> Take quiz</button>
-                <button className={compareOpen ? "active" : ""} onClick={() => setCompareOpen(!compareOpen)}><Orbit size={15} /> Compare</button>
-              </div>
-            </>
-          )}
+          <div className="composition" data-reveal><small>Composition</small><p>{object.facts.composition}</p></div>
+          <div className="science-note" data-reveal><Telescope size={17} /><p><b>Scientific significance</b>{object.significance}</p></div>
+          <div className="discovery-note" data-reveal><Sparkles size={16} /><p><b>Did you know?</b>{object.didYouKnow}</p></div>
+          <button className="primary-action" data-reveal onClick={() => setModal("lesson")}><BookOpen size={16} /> View lesson <ArrowRight size={15} /></button>
+          <div className="action-grid" data-reveal>
+            <button className={orbiting ? "active" : ""} onClick={() => setOrbiting(!orbiting)}><Play size={15} /> {orbiting ? "Surface view" : "Animate orbit"}</button>
+            <button onClick={() => setModal("quiz")}><CircleHelp size={15} /> Take quiz</button>
+            <button className={compareOpen ? "active" : ""} onClick={() => setCompareOpen(!compareOpen)}><Orbit size={15} /> Compare</button>
+          </div>
         </aside>
       </div>
 
