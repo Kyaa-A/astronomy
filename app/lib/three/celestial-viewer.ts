@@ -281,6 +281,8 @@ export class CelestialViewer {
   private current: CelestialObject | null = null;
   private markerTexture = createMarkerTexture();
   private textureLoader = new THREE.TextureLoader();
+  private currentAlbedoMap: THREE.Texture | null = null;
+  private currentNormalMap: THREE.Texture | null = null;
   private textureRequest = 0;
   private generatedTextures: THREE.Texture[] = [];
   private markerMap = new Map<THREE.Object3D, CelestialHotspot>();
@@ -415,12 +417,16 @@ export class CelestialViewer {
         return;
       }
       loaded = Object.fromEntries(textures);
+      this.currentAlbedoMap = loaded.albedo ?? null;
+      this.currentNormalMap = loaded.normal ?? null;
       this.generatedTextures.push(...textures.map(([, texture]) => texture));
     } catch {
       if (request !== this.textureRequest) return;
       const fallback = createSurfaceTexture(object);
       this.generatedTextures.push(fallback);
       loaded = { albedo: fallback };
+      this.currentAlbedoMap = fallback;
+      this.currentNormalMap = null;
     }
 
     const geometry = new THREE.SphereGeometry(PLANET_RADIUS, 96, 64);
@@ -584,14 +590,14 @@ export class CelestialViewer {
 
     const isEarth = object.id === "earth";
     const layerDefs = isEarth ? [
-      { name: "Crust & Surface", radius: 2.0, color: "#54b8ff", emissive: 0x000000, roughness: 0.8 },
-      { name: "Convecting Mantle", radius: 1.65, color: "#b86a28", emissive: 0x000000, roughness: 0.7 },
-      { name: "Liquid Outer Core", radius: 1.15, color: "#ff4400", emissive: 0xaa2200, roughness: 0.3 },
-      { name: "Solid Inner Core", radius: 0.58, color: "#fff4ad", emissive: 0xffaa00, roughness: 0.2 },
+      { name: "Crust & Surface", radius: 2.0, color: "#54b8ff", emissive: 0x000000, roughness: 0.78, useTexture: true },
+      { name: "Convecting Mantle", radius: 1.65, color: "#b86a28", emissive: 0x000000, roughness: 0.7, useTexture: false },
+      { name: "Liquid Outer Core", radius: 1.15, color: "#ff4400", emissive: 0xaa2200, roughness: 0.3, useTexture: false },
+      { name: "Solid Inner Core", radius: 0.58, color: "#fff4ad", emissive: 0xffaa00, roughness: 0.2, useTexture: false },
     ] : [
-      { name: "Crust & Surface", radius: 2.0, color: "#8c5828", emissive: 0x000000, roughness: 0.8 },
-      { name: "Mantle", radius: 1.45, color: "#cc7733", emissive: 0x000000, roughness: 0.7 },
-      { name: "Core", radius: 0.75, color: "#ffaa00", emissive: 0x663300, roughness: 0.3 },
+      { name: "Crust & Surface", radius: 2.0, color: "#8c5828", emissive: 0x000000, roughness: 0.8, useTexture: true },
+      { name: "Mantle", radius: 1.45, color: "#cc7733", emissive: 0x000000, roughness: 0.7, useTexture: false },
+      { name: "Core", radius: 0.75, color: "#ffaa00", emissive: 0x663300, roughness: 0.3, useTexture: false },
     ];
 
     layerDefs.forEach((def, index) => {
@@ -601,7 +607,9 @@ export class CelestialViewer {
         : new THREE.SphereGeometry(def.radius, 64, 48, 0, Math.PI * 1.5);
 
       const mat = new THREE.MeshStandardMaterial({
-        color: def.color,
+        map: def.useTexture && this.currentAlbedoMap ? this.currentAlbedoMap : null,
+        normalMap: def.useTexture && this.currentNormalMap ? this.currentNormalMap : null,
+        color: def.useTexture && this.currentAlbedoMap ? 0xffffff : def.color,
         emissive: def.emissive,
         emissiveIntensity: def.emissive ? 0.6 : 0,
         roughness: def.roughness,
@@ -609,7 +617,7 @@ export class CelestialViewer {
       });
 
       const mesh = new THREE.Mesh(geom, mat);
-      mesh.userData = { layerName: def.name, layerColor: def.color, radius: def.radius };
+      mesh.userData = { layerName: def.name, layerColor: def.color, radius: def.radius, index };
       this.layerGroup.add(mesh);
       this.layerMeshes.push(mesh);
     });
@@ -801,9 +809,17 @@ export class CelestialViewer {
     const distance = this.camera.position.distanceTo(this.controls.target);
     const scale = THREE.MathUtils.clamp(7.5 / distance, 0.65, 2.0);
 
-    return this.layerMeshes.map((mesh) => {
-      const r = (mesh.userData.radius as number) ?? 1.0;
-      const localPos = new THREE.Vector3(r * 0.72, r * 0.35, r * 0.72);
+    // Positions placed directly inside each exposed cutaway section
+    const labelOffsets = [
+      new THREE.Vector3(1.35, 1.10, 0.80), // Crust & Surface
+      new THREE.Vector3(0.95, 0.60, 0.65), // Mantle
+      new THREE.Vector3(0.58, 0.18, 0.42), // Liquid Outer Core
+      new THREE.Vector3(0.10, -0.22, 0.12), // Solid Inner Core
+    ];
+
+    return this.layerMeshes.map((mesh, index) => {
+      const offset = labelOffsets[index] ?? new THREE.Vector3(0.5, 0.5, 0.5);
+      const localPos = offset.clone();
       localPos.applyEuler(this.layerGroup.rotation);
       const worldPos = this.body.getWorldPosition(new THREE.Vector3()).add(localPos);
       const projected = worldPos.project(this.camera);
