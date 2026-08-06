@@ -284,21 +284,22 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
         </div>
       )}
 
-      {/* Floating layer labels */}
+      {/* Floating layer labels with leader lines */}
       {layers && layerPositions.length > 0 && (
         <div className="label-overlay" aria-hidden="true">
           {layerPositions.map((lp) => (
             <div
               key={lp.name}
-              className="layer-label"
+              className="layer-label-wrapper"
               style={{
                 left: `${lp.x}px`,
                 top: `${lp.y}px`,
-                transform: `translate(-50%, -50%) scale(${lp.scale ?? 1})`,
+                transform: `translate(-100%, -50%) scale(${lp.scale ?? 1})`,
                 "--layer-color": lp.color,
               } as React.CSSProperties}
             >
-              {lp.name}
+              <div className="layer-label">{lp.name}</div>
+              <div className="layer-leader-line"><span /></div>
             </div>
           ))}
         </div>

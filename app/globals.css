@@ -124,8 +124,11 @@ button:disabled { cursor: not-allowed; opacity: 0.68; }
 .callout-focus-btn { margin-top: 8px; border: 1px solid rgba(112,220,255,.35); background: rgba(112,220,255,.08); color: var(--cyan); border-radius: 6px; padding: 5px 8px; font-size: 9px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; transition: .18s; cursor: pointer; }
 .callout-focus-btn:hover { background: rgba(112,220,255,.2); border-color: var(--cyan); color: #fff; }
 
-/* Layer floating labels (Clean typography inside cutaway) */
-.layer-label { position: absolute; pointer-events: none; font-size: 10px; font-weight: 800; font-family: var(--font-sans), sans-serif; text-transform: uppercase; letter-spacing: .16em; color: #ffffff; text-shadow: 0 0 6px #000, 0 0 14px var(--layer-color, var(--cyan)), 0 0 24px #000; padding: 2px 6px; border-radius: 4px; background: rgba(4,8,22,.65); border: 1px solid color-mix(in srgb, var(--layer-color, var(--cyan)) 40%, transparent); backdrop-filter: blur(8px); white-space: nowrap; transition: transform .04s linear; z-index: 12; }
+/* Layer floating labels & leader lines */
+.layer-label-wrapper { position: absolute; pointer-events: none; display: flex; align-items: center; gap: 6px; z-index: 12; transition: transform .04s linear; }
+.layer-label { background: rgba(6,10,26,.88); border: 1px solid color-mix(in srgb, var(--layer-color, var(--cyan)) 45%, transparent); border-radius: 5px; padding: 4px 9px; font-size: 10px; font-weight: 800; font-family: var(--font-sans), sans-serif; text-transform: uppercase; letter-spacing: .12em; color: #ffffff; text-shadow: 0 0 6px #000; backdrop-filter: blur(10px); box-shadow: 0 4px 16px rgba(0,0,0,.6), 0 0 12px color-mix(in srgb, var(--layer-color, var(--cyan)) 30%, transparent); white-space: nowrap; }
+.layer-leader-line { display: flex; align-items: center; width: 26px; height: 2px; background: color-mix(in srgb, var(--layer-color, var(--cyan)) 70%, #fff); position: relative; box-shadow: 0 0 6px var(--layer-color, var(--cyan)); flex-shrink: 0; }
+.layer-leader-line span { position: absolute; right: -4px; width: 6px; height: 6px; border-radius: 50%; background: #ffffff; box-shadow: 0 0 8px var(--layer-color, var(--cyan)); }
 
 /* Floating orbit planet tags */
 .orbit-planet-tag { position: absolute; left: 0; top: 0; pointer-events: none; display: flex; align-items: center; gap: 5px; background: rgba(5,8,22,.88); border: 1px solid rgba(255,255,255,.14); border-radius: 6px; padding: 2px 7px; font-size: 9px; color: #e1e9fb; white-space: nowrap; backdrop-filter: blur(8px); box-shadow: 0 4px 14px #0008; transform: translate(-50%, -100%); transition: transform .15s ease; }

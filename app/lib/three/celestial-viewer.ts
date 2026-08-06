@@ -590,12 +590,12 @@ export class CelestialViewer {
 
     const isEarth = object.id === "earth";
     const layerDefs = isEarth ? [
-      { name: "Crust & Surface", radius: 2.0, color: "#54b8ff", emissive: 0x000000, roughness: 0.78, useTexture: true },
-      { name: "Convecting Mantle", radius: 1.65, color: "#b86a28", emissive: 0x000000, roughness: 0.7, useTexture: false },
+      { name: "Crust", radius: 2.0, color: "#54b8ff", emissive: 0x000000, roughness: 0.78, useTexture: true },
+      { name: "Mantle (slowly convecting solid rock)", radius: 1.65, color: "#b86a28", emissive: 0x000000, roughness: 0.7, useTexture: false },
       { name: "Liquid Outer Core", radius: 1.15, color: "#ff4400", emissive: 0xaa2200, roughness: 0.3, useTexture: false },
       { name: "Solid Inner Core", radius: 0.58, color: "#fff4ad", emissive: 0xffaa00, roughness: 0.2, useTexture: false },
     ] : [
-      { name: "Crust & Surface", radius: 2.0, color: "#8c5828", emissive: 0x000000, roughness: 0.8, useTexture: true },
+      { name: "Crust", radius: 2.0, color: "#8c5828", emissive: 0x000000, roughness: 0.8, useTexture: true },
       { name: "Mantle", radius: 1.45, color: "#cc7733", emissive: 0x000000, roughness: 0.7, useTexture: false },
       { name: "Core", radius: 0.75, color: "#ffaa00", emissive: 0x663300, roughness: 0.3, useTexture: false },
     ];
@@ -811,12 +811,12 @@ export class CelestialViewer {
     const distance = this.camera.position.distanceTo(this.controls.target);
     const scale = THREE.MathUtils.clamp(7.5 / distance, 0.65, 2.0);
 
-    // Top-to-bottom positions landing accurately over each cutaway layer ring on the left side
+    // Exact positions radiating out along the top-left 45° angle over each cutaway ring
     const labelOffsets = [
-      new THREE.Vector3(-0.10, 1.05, -1.25), // Crust & Surface (outer crust ring)
-      new THREE.Vector3(-0.10, 0.45, -0.85), // Convecting Mantle (brown mantle ring)
-      new THREE.Vector3(-0.10, -0.10, -0.45), // Liquid Outer Core (orange outer core ring)
-      new THREE.Vector3(-0.10, -0.55, -0.12), // Solid Inner Core (central inner core)
+      new THREE.Vector3(-0.08, 1.38, -1.38), // Crust (thin outermost edge)
+      new THREE.Vector3(-0.08, 1.02, -1.02), // Mantle (slowly convecting solid rock)
+      new THREE.Vector3(-0.08, 0.64, -0.64), // Liquid Outer Core (bright red-orange ring)
+      new THREE.Vector3(-0.08, 0.22, -0.22), // Solid Inner Core (pale yellow/white central sphere)
     ];
 
     return this.layerMeshes.map((mesh, index) => {
