@@ -137,11 +137,11 @@ button:disabled { cursor: not-allowed; opacity: 0.68; }
 .orbit-planet-tag.current b { color: var(--cyan); }
 
 /* Floating 3D atmosphere shell tags */
-.atmosphere-shell-tag { position: absolute; left: 0; top: 0; pointer-events: none; display: flex; align-items: center; gap: 6px; background: rgba(8,12,30,.92); border: 1px solid var(--shell-color, var(--cyan)); border-radius: 8px; padding: 3px 9px; font-size: 9px; color: #fff; white-space: nowrap; backdrop-filter: blur(10px); box-shadow: 0 4px 18px color-mix(in srgb, var(--shell-color) 35%, transparent); transform: translate(-50%, -50%); }
-.atmosphere-shell-tag i { width: 7px; height: 7px; border-radius: 50%; background: var(--shell-color, var(--cyan)); box-shadow: 0 0 10px var(--shell-color, var(--cyan)); display: inline-block; flex-shrink: 0; }
-.atmosphere-shell-tag span { display: flex; flex-direction: column; text-align: left; }
-.atmosphere-shell-tag b { font-size: 10px; font-weight: 700; color: var(--shell-color, #fff); line-height: 1.1; }
-.atmosphere-shell-tag small { font-size: 8px; color: #d6e2f7; margin-top: 1px; }
+.atmosphere-shell-tag { position: absolute; left: 0; top: 0; pointer-events: none; display: flex; align-items: center; gap: 7px; background: linear-gradient(135deg, rgba(8,12,30,.94), color-mix(in srgb, var(--shell-color) 20%, transparent)); border: 1px solid color-mix(in srgb, var(--shell-color) 70%, transparent); border-radius: 24px; padding: 4px 12px; font-size: 9.5px; color: #fff; white-space: nowrap; backdrop-filter: blur(12px); box-shadow: 0 4px 22px color-mix(in srgb, var(--shell-color) 40%, transparent), inset 0 1px 0 rgba(255,255,255,.2); transform: translate(-50%, -50%); }
+.atmosphere-shell-tag i { width: 7px; height: 7px; border-radius: 50%; background: var(--shell-color, var(--cyan)); box-shadow: 0 0 12px var(--shell-color, var(--cyan)); display: inline-block; flex-shrink: 0; }
+.atmosphere-shell-tag span { display: flex; align-items: center; gap: 6px; text-align: left; }
+.atmosphere-shell-tag b { font-size: 10.5px; font-weight: 700; color: var(--shell-color, #fff); line-height: 1; letter-spacing: .02em; }
+.atmosphere-shell-tag small { font-size: 8.5px; color: #e2ebfd; opacity: .9; font-weight: 500; }
 
 /* Status Toast */
 .viewer-status { position: absolute; z-index: 16; bottom: 48px; left: 50%; transform: translateX(-50%); background: rgba(12,17,40,.92); border: 1px solid rgba(112,220,255,.4); border-radius: 20px; padding: 6px 14px; font-size: 11px; color: var(--cyan); backdrop-filter: blur(14px); box-shadow: 0 8px 24px rgba(0,0,0,.5), 0 0 16px rgba(112,220,255,.15); pointer-events: none; animation: toast-in .22s cubic-bezier(0.16, 1, 0.3, 1); white-space: nowrap; }

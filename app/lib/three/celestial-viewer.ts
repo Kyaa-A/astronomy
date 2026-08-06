@@ -56,11 +56,11 @@ export type AtmospherePosition = {
 };
 
 const ATMOSPHERE_LAYERS_3D = [
-  { id: "troposphere", name: "Troposphere", radius: 2.06, color: 0x5ee0a8, opacity: 0.32, range: "0–12 km (0–7.5 mi)", temp: "62°F to -60°F", feature: "Weather & Life Zone", angle: -0.55 },
-  { id: "stratosphere", name: "Stratosphere", radius: 2.18, color: 0x48c9ff, opacity: 0.28, range: "12–50 km (7.5–31 mi)", temp: "-60°F to 5°F", feature: "Ozone Shield (O₃)", angle: -0.28 },
-  { id: "mesosphere", name: "Mesosphere", radius: 2.32, color: 0x8668ff, opacity: 0.24, range: "50–85 km (31–53 mi)", temp: "5°F to -148°F", feature: "Coldest Layer (-90°C)", angle: 0 },
-  { id: "thermosphere", name: "Thermosphere", radius: 2.50, color: 0x54d3ff, opacity: 0.20, range: "85–690 km (53–430 mi)", temp: "930°F to 3,600°F", feature: "Auroras & Kármán Line (100 km)", angle: 0.28 },
-  { id: "exosphere", name: "Exosphere", radius: 2.72, color: 0x6174ff, opacity: 0.15, range: "690–10,000 km (430–6,200 mi)", temp: "Near Absolute Zero", feature: "Deep Space Fringe", angle: 0.55 },
+  { id: "troposphere", name: "Troposphere", radius: 2.08, color: 0x5ee0a8, opacity: 0.32, range: "0–12 km (0–7.5 mi)", temp: "62°F to -60°F", feature: "Weather & Life Zone", angle: 0 },
+  { id: "stratosphere", name: "Stratosphere", radius: 2.22, color: 0x48c9ff, opacity: 0.28, range: "12–50 km (7.5–31 mi)", temp: "-60°F to 5°F", feature: "Ozone Shield (O₃)", angle: 0 },
+  { id: "mesosphere", name: "Mesosphere", radius: 2.38, color: 0x8668ff, opacity: 0.24, range: "50–85 km (31–53 mi)", temp: "5°F to -148°F", feature: "Coldest Layer (-90°C)", angle: 0 },
+  { id: "thermosphere", name: "Thermosphere", radius: 2.56, color: 0x54d3ff, opacity: 0.20, range: "85–690 km (53–430 mi)", temp: "930°F to 3,600°F", feature: "Auroras & Kármán Line (100 km)", angle: 0 },
+  { id: "exosphere", name: "Exosphere", radius: 2.76, color: 0x6174ff, opacity: 0.15, range: "690–10,000 km (430–6,200 mi)", temp: "Near Absolute Zero", feature: "Deep Space Fringe", angle: 0 },
 ] as const;
 
 const LAYER_NAMES = ["Crust", "Mantle", "Core"] as const;
