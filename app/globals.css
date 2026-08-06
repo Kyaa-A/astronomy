@@ -82,7 +82,7 @@ button:disabled { cursor: not-allowed; opacity: 0.68; }
 .favorite-button { width: 34px; border: 0; background: none; color: #73809b; transition: .18s; }.favorite-button:hover, .favorite-button[aria-pressed="true"] { color: var(--object-accent); transform: scale(1.08); }
 .object-glyph { width: 58px; height: 58px; flex: 0 0 auto; border-radius: 50%; display: grid; place-items: center; position: relative; overflow: visible; background: #02040b; box-shadow: inset -8px -5px 13px #02030c88, 0 0 24px color-mix(in srgb, var(--planet-accent) 20%, transparent); isolation: isolate; }
 .object-glyph::before { content: ""; position: absolute; inset: 0; z-index: 2; border-radius: 50%; pointer-events: none; box-shadow: inset -7px -4px 12px rgba(0,0,0,.42), inset 2px 2px 5px rgba(255,255,255,.08); }
-.object-photo { width: 100%; height: 100%; display: block; border-radius: 50%; background: center / contain no-repeat; transition: transform .28s ease, filter .28s ease; }
+.object-photo { width: 100%; height: 100%; display: block; border-radius: 50%; overflow: hidden; clip-path: circle(50%); background: center / cover no-repeat; transition: transform .28s ease, filter .28s ease; }
 .library-row:hover .object-photo { transform: scale(1.07); filter: saturate(1.08) contrast(1.04); }
 .object-glyph i { position: absolute; inset: -4px; border: 1px solid color-mix(in srgb, var(--planet-accent) 45%, transparent); border-radius: 50%; transform: rotate(-16deg) scaleY(.33); opacity: 0; }
 .object-glyph.ringed i { opacity: .86; }.object-glyph.small { width: 38px; height: 38px; }.object-glyph.small i { inset: -3px; }
