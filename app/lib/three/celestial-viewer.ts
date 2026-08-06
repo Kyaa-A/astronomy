@@ -15,6 +15,7 @@ type ViewerCallbacks = {
   onOrbitAngle?: (degrees: number) => void;
   onOrbitPlanetsUpdate?: (positions: OrbitPlanetPosition[]) => void;
   onAtmosphereUpdate?: (positions: AtmospherePosition[]) => void;
+  onContinentsUpdate?: (positions: ContinentPosition[]) => void;
 };
 
 const HOME_CAMERA = new THREE.Vector3(0, 0.3, 9.4);
@@ -57,6 +58,34 @@ export type AtmospherePosition = {
   arcRadius: number;
   arcOffset: number;
 };
+
+export type ContinentPosition = {
+  id: string;
+  name: string;
+  type: "continent" | "ocean";
+  area: string;
+  population?: string;
+  color: string;
+  x: number;
+  y: number;
+  behind: boolean;
+  scale: number;
+};
+
+const CONTINENT_MARKERS = [
+  { id: "africa", name: "Africa", type: "continent", latitude: 5, longitude: 20, area: "30.37M km²", population: "1.4B", color: "#74d39a" },
+  { id: "antarctica", name: "Antarctica", type: "continent", latitude: -80, longitude: 0, area: "14.20M km²", population: "~1,000", color: "#a8d8ea" },
+  { id: "asia", name: "Asia", type: "continent", latitude: 34, longitude: 100, area: "44.58M km²", population: "4.7B", color: "#f0b96b" },
+  { id: "europe", name: "Europe", type: "continent", latitude: 50, longitude: 15, area: "10.18M km²", population: "750M", color: "#bd9cff" },
+  { id: "north-america", name: "North America", type: "continent", latitude: 45, longitude: -100, area: "24.71M km²", population: "580M", color: "#64d8ff" },
+  { id: "south-america", name: "South America", type: "continent", latitude: -15, longitude: -60, area: "17.84M km²", population: "430M", color: "#ff7eb3" },
+  { id: "oceania", name: "Oceania", type: "continent", latitude: -25, longitude: 135, area: "8.53M km²", population: "45M", color: "#54d3ff" },
+  { id: "pacific-ocean", name: "Pacific Ocean", type: "ocean", latitude: 0, longitude: -160, area: "165.25M km²", color: "#2bbcff" },
+  { id: "atlantic-ocean", name: "Atlantic Ocean", type: "ocean", latitude: 0, longitude: -30, area: "106.46M km²", color: "#4488ff" },
+  { id: "indian-ocean", name: "Indian Ocean", type: "ocean", latitude: -20, longitude: 80, area: "70.56M km²", color: "#22aadd" },
+  { id: "arctic-ocean", name: "Arctic Ocean", type: "ocean", latitude: 85, longitude: 0, area: "14.06M km²", color: "#88ccee" },
+  { id: "southern-ocean", name: "Southern Ocean", type: "ocean", latitude: -65, longitude: 0, area: "21.96M km²", color: "#66bbdd" },
+] as const;
 
 const ATMOSPHERE_LAYERS_3D = [
   { id: "troposphere", name: "Troposphere", shellRadius: 2.22, labelRadius: 2.11, color: 0x5ee0a8, opacity: 0.38, range: "0–12 km (0–7.5 mi)", temp: "62°F to -60°F", feature: "Weather & Life Zone" },
@@ -267,6 +296,7 @@ export class CelestialViewer {
   private orbiting = false;
   private layersVisible = false;
   private atmosphereVisible = false;
+  private continentsVisible = false;
   private relativeScale = false;
   private visible = true;
   private disposed = false;
@@ -631,6 +661,14 @@ export class CelestialViewer {
     }
   }
 
+  setContinents(enabled: boolean) {
+    this.continentsVisible = enabled;
+    if (enabled) {
+      this.autoRotate = true;
+    }
+    this.applyModes();
+  }
+
   setLayers(enabled: boolean) {
     this.layersVisible = enabled;
     this.applyModes();
@@ -760,6 +798,41 @@ export class CelestialViewer {
         arcOffset: 0,
       };
     });
+  }
+
+  getContinentPositions(): ContinentPosition[] {
+    if (!this.continentsVisible) return [];
+    const results: ContinentPosition[] = [];
+    const w = this.container.clientWidth;
+    const h = this.container.clientHeight;
+    const distance = this.camera.position.distanceTo(this.controls.target);
+    const scale = THREE.MathUtils.clamp(8.0 / distance, 0.7, 1.8);
+    const bodyCenter = this.body.getWorldPosition(new THREE.Vector3());
+
+    for (const marker of CONTINENT_MARKERS) {
+      const localPos = positionFromCoordinates(marker.latitude, marker.longitude, PLANET_RADIUS * 1.04);
+      localPos.applyEuler(this.body.rotation);
+      const worldPos = bodyCenter.clone().add(localPos);
+
+      const camDir = worldPos.clone().sub(this.camera.position).normalize();
+      const toCenter = bodyCenter.clone().sub(this.camera.position).normalize();
+      const behind = camDir.dot(toCenter) > 0 && worldPos.distanceTo(this.camera.position) > bodyCenter.distanceTo(this.camera.position);
+
+      const projected = worldPos.clone().project(this.camera);
+      results.push({
+        id: marker.id,
+        name: marker.name,
+        type: marker.type,
+        area: marker.area,
+        population: "population" in marker ? marker.population : undefined,
+        color: marker.color,
+        x: (projected.x * 0.5 + 0.5) * w,
+        y: (-projected.y * 0.5 + 0.5) * h,
+        behind,
+        scale,
+      });
+    }
+    return results;
   }
 
   private cameraTweenStartTime = 0;
@@ -995,6 +1068,10 @@ export class CelestialViewer {
     if (this.atmosphereVisible) {
       this.atmosphereGroup.rotation.y += delta * 0.05;
       this.callbacks.onAtmosphereUpdate?.(this.getAtmospherePositions());
+    }
+    // Continent position callback
+    if (this.continentsVisible) {
+      this.callbacks.onContinentsUpdate?.(this.getContinentPositions());
     }
     this.controls.update(delta);
     this.updateCallout();

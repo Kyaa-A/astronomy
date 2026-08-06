@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CircleDotDashed, Cloud, Gauge, Layers3, Lock, Minus, Orbit, Plus, RefreshCcw,
+import { CircleDotDashed, Cloud, Gauge, Globe2, Layers3, Lock, Minus, Orbit, Plus, RefreshCcw,
   Rotate3D, Sparkles, Tags, Telescope, Unlock, X, ZoomIn,
 } from "lucide-react";
 import type { CelestialHotspot, CelestialObject } from "../lib/celestial-data";
-import type { AtmospherePosition, CelestialViewer as ViewerInstance, LabelPosition, LayerPosition, OrbitPlanetPosition } from "../lib/three/celestial-viewer";
+import type { AtmospherePosition, CelestialViewer as ViewerInstance, ContinentPosition, LabelPosition, LayerPosition, OrbitPlanetPosition } from "../lib/three/celestial-viewer";
 
 type Props = {
   object: CelestialObject;
@@ -35,10 +35,12 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
   const [zoomOpen, setZoomOpen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(43);
   const [atmosphere, setAtmosphere] = useState(false);
+  const [continents, setContinents] = useState(false);
   const [labelPositions, setLabelPositions] = useState<LabelPosition[]>([]);
   const [layerPositions, setLayerPositions] = useState<LayerPosition[]>([]);
   const [orbitPlanetPositions, setOrbitPlanetPositions] = useState<OrbitPlanetPosition[]>([]);
   const [atmospherePositions, setAtmospherePositions] = useState<AtmospherePosition[]>([]);
+  const [continentPositions, setContinentPositions] = useState<ContinentPosition[]>([]);
   const statusTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => { objectRef.current = object; }, [object]);
@@ -72,6 +74,7 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
           onLayersUpdate: setLayerPositions,
           onOrbitPlanetsUpdate: setOrbitPlanetPositions,
           onAtmosphereUpdate: setAtmospherePositions,
+          onContinentsUpdate: setContinentPositions,
         });
         viewerRef.current = viewer;
         viewer.setAutoRotate(autoRotateRef.current);
@@ -108,6 +111,12 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
     viewerRef.current?.setAtmosphere(next);
     showStatus(next ? "3D Atmosphere Shells active" : "Surface view restored");
   };
+  const toggleContinents = () => {
+    const next = !continents;
+    setContinents(next);
+    viewerRef.current?.setContinents(next);
+    showStatus(next ? "Continents & Oceans view active" : "Surface view restored");
+  };
   const toggleLayers = () => {
     const next = !layers;
     setLayers(next);
@@ -133,6 +142,7 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
       showStatus(!orbiting ? "Orbit simulation active" : "Orbit simulation stopped");
     }
     if (id === "atmosphere") toggleAtmosphere();
+    if (id === "continents") toggleContinents();
     if (id === "labels") toggleLabels();
     if (id === "layers") toggleLayers();
     if (id === "scale") {
@@ -147,6 +157,7 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
         setLabels(state.labels);
         setLayers(state.layers);
         setAtmosphere(false);
+        setContinents(false);
         setRelativeScale(state.relativeScale);
         onOrbiting(state.orbit);
         setZoomOpen(false);
@@ -167,6 +178,7 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
       if (e.key === "z" || e.key === "Z") handleTool("zoom");
       if (e.key === "o" || e.key === "O") handleTool("orbit");
       if (e.key === "a" || e.key === "A") handleTool("atmosphere");
+      if (e.key === "g" || e.key === "G") handleTool("continents");
       if (e.key === "l" || e.key === "L") handleTool("labels");
       if (e.key === "y" || e.key === "Y") handleTool("layers");
       if (e.key === "c" || e.key === "C") handleTool("scale");
@@ -177,6 +189,7 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoRotate, orbiting, labels, layers, relativeScale, comparing, object]);
 
+  const isEarth = object.id === "earth";
   const hasAtmosphere = object.hotspots.some((h) => h.id === "atmosphere");
 
   const tools = [
@@ -184,6 +197,7 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
     { id: "zoom", label: `Zoom ${zoomLevel}% (Z)`, icon: ZoomIn, active: zoomOpen },
     { id: "orbit", label: "Orbit view (O)", icon: Orbit, active: orbiting },
     ...(hasAtmosphere ? [{ id: "atmosphere", label: "3D Atmosphere (A)", icon: Cloud, active: atmosphere }] : []),
+    ...(isEarth ? [{ id: "continents", label: "Continents (G)", icon: Globe2, active: continents }] : []),
     { id: "labels", label: `Labels · ${object.hotspots.length} (L)`, icon: Tags, active: labels, badge: object.hotspots.length },
     { id: "layers", label: "Internal layers (Y)", icon: Layers3, active: layers },
     { id: "scale", label: "Compare scale (C)", icon: Gauge, active: relativeScale || comparing },
@@ -293,6 +307,30 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
               } as React.CSSProperties}
             >
               {ap.name}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Floating 3D continent & ocean tags */}
+      {continents && continentPositions.length > 0 && (
+        <div className="label-overlay" aria-hidden="true">
+          {continentPositions.map((cp) => (
+            <div
+              key={cp.id}
+              className={`continent-tag ${cp.type} ${cp.behind ? "behind" : ""}`}
+              style={{
+                left: `${cp.x}px`,
+                top: `${cp.y}px`,
+                transform: `translate(-50%, -50%) scale(${cp.scale})`,
+                "--tag-accent": cp.color,
+              } as React.CSSProperties}
+            >
+              <div className="continent-tag-dot" />
+              <div className="continent-tag-body">
+                <strong>{cp.name}</strong>
+                <small>{cp.area}{cp.population ? ` · ${cp.population}` : ""}</small>
+              </div>
             </div>
           ))}
         </div>
