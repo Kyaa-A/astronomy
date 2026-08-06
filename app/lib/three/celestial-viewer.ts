@@ -610,12 +610,13 @@ export class CelestialViewer {
   setAtmosphere(enabled: boolean) {
     this.atmosphereVisible = enabled;
     if (enabled) {
+      this.autoRotate = false;
       this.controls.maxDistance = 15;
       this.controls.minDistance = 3.6;
       this.applyModes();
       // Target upper curve of Earth so atmosphere bands fan cleanly across upper screen
-      const topTarget = new THREE.Vector3(0, 1.35, 0);
-      const topCamera = new THREE.Vector3(0.2, 2.1, 7.8);
+      const topTarget = new THREE.Vector3(0, 1.32, 0);
+      const topCamera = new THREE.Vector3(0, 2.05, 7.6);
       this.tweenCamera(topCamera, topTarget);
     } else {
       this.controls.maxDistance = 13;

@@ -280,9 +280,8 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
       {atmosphere && atmospherePositions.length > 0 && (
         <div className="label-overlay" aria-hidden="true">
           {atmospherePositions.map((ap) => (
-            <div key={ap.id} className="atmosphere-shell-tag" style={{ transform: `translate3d(${ap.x}px, ${ap.y}px, 0)`, "--shell-color": ap.color } as React.CSSProperties}>
-              <i />
-              <span><b>{ap.name}</b><small>{ap.range} · {ap.feature}</small></span>
+            <div key={ap.id} className="atmosphere-shell-tag" style={{ transform: `translate3d(${ap.x}px, ${ap.y}px, 0)`, color: ap.color } as React.CSSProperties}>
+              {ap.name}
             </div>
           ))}
         </div>
