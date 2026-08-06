@@ -56,11 +56,11 @@ export type AtmospherePosition = {
 };
 
 const ATMOSPHERE_LAYERS_3D = [
-  { id: "troposphere", name: "Troposphere", radius: 2.08, color: 0x5ee0a8, opacity: 0.32, range: "0–12 km (0–7.5 mi)", temp: "62°F to -60°F", feature: "Weather & Life Zone", angle: 0 },
-  { id: "stratosphere", name: "Stratosphere", radius: 2.22, color: 0x48c9ff, opacity: 0.28, range: "12–50 km (7.5–31 mi)", temp: "-60°F to 5°F", feature: "Ozone Shield (O₃)", angle: 0 },
-  { id: "mesosphere", name: "Mesosphere", radius: 2.38, color: 0x8668ff, opacity: 0.24, range: "50–85 km (31–53 mi)", temp: "5°F to -148°F", feature: "Coldest Layer (-90°C)", angle: 0 },
-  { id: "thermosphere", name: "Thermosphere", radius: 2.56, color: 0x54d3ff, opacity: 0.20, range: "85–690 km (53–430 mi)", temp: "930°F to 3,600°F", feature: "Auroras & Kármán Line (100 km)", angle: 0 },
-  { id: "exosphere", name: "Exosphere", radius: 2.76, color: 0x6174ff, opacity: 0.15, range: "690–10,000 km (430–6,200 mi)", temp: "Near Absolute Zero", feature: "Deep Space Fringe", angle: 0 },
+  { id: "troposphere", name: "Troposphere", shellRadius: 2.14, labelRadius: 2.07, color: 0x5ee0a8, opacity: 0.35, range: "0–12 km (0–7.5 mi)", temp: "62°F to -60°F", feature: "Weather & Life Zone" },
+  { id: "stratosphere", name: "Stratosphere", shellRadius: 2.30, labelRadius: 2.22, color: 0x48c9ff, opacity: 0.30, range: "12–50 km (7.5–31 mi)", temp: "-60°F to 5°F", feature: "Ozone Shield (O₃)" },
+  { id: "mesosphere", name: "Mesosphere", shellRadius: 2.50, labelRadius: 2.40, color: 0x8668ff, opacity: 0.25, range: "50–85 km (31–53 mi)", temp: "5°F to -148°F", feature: "Coldest Layer (-90°C)" },
+  { id: "thermosphere", name: "Thermosphere", shellRadius: 2.76, labelRadius: 2.63, color: 0x54d3ff, opacity: 0.20, range: "85–690 km (53–430 mi)", temp: "930°F to 3,600°F", feature: "Auroras & Kármán Line (100 km)" },
+  { id: "exosphere", name: "Exosphere", shellRadius: 3.08, labelRadius: 2.92, color: 0x6174ff, opacity: 0.15, range: "690–10,000 km (430–6,200 mi)", temp: "Near Absolute Zero", feature: "Deep Space Fringe" },
 ] as const;
 
 const LAYER_NAMES = ["Crust", "Mantle", "Core"] as const;
@@ -504,7 +504,7 @@ export class CelestialViewer {
     this.atmosphereMeshes = [];
     ATMOSPHERE_LAYERS_3D.forEach((layer) => {
       const mesh = new THREE.Mesh(
-        new THREE.SphereGeometry(layer.radius, 48, 36),
+        new THREE.SphereGeometry(layer.shellRadius, 48, 36),
         new THREE.MeshStandardMaterial({
           color: layer.color,
           transparent: true,
@@ -615,9 +615,9 @@ export class CelestialViewer {
       this.controls.maxDistance = 15;
       this.controls.minDistance = 3.6;
       this.applyModes();
-      // Target upper curve of Earth so atmosphere bands fan cleanly across upper screen
-      const topTarget = new THREE.Vector3(0, 1.32, 0);
-      const topCamera = new THREE.Vector3(0, 2.05, 7.6);
+      // Target upper curve of Earth close up so Earth is big and fills screen dramatically
+      const topTarget = new THREE.Vector3(0, 1.15, 0);
+      const topCamera = new THREE.Vector3(0, 1.85, 5.8);
       this.tweenCamera(topCamera, topTarget);
     } else {
       this.controls.enableRotate = true;
@@ -731,14 +731,9 @@ export class CelestialViewer {
     const w = this.container.clientWidth;
     const h = this.container.clientHeight;
     return this.atmosphereMeshes.map((mesh) => {
-      const data = mesh.userData as { id: string; name: string; radius: number; range: string; temp: string; feature: string; color: number; angle: number };
-      const r = data.radius;
-      const angle = data.angle;
-      const worldPos = new THREE.Vector3(
-        Math.sin(angle) * r * 0.94,
-        Math.cos(angle) * r * 0.96,
-        0,
-      );
+      const data = mesh.userData as { id: string; name: string; labelRadius: number; range: string; temp: string; feature: string; color: number };
+      const r = data.labelRadius;
+      const worldPos = new THREE.Vector3(0, r, 0);
       this.atmosphereGroup.localToWorld(worldPos);
       const projected = worldPos.project(this.camera);
       return {
