@@ -611,6 +611,7 @@ export class CelestialViewer {
     this.atmosphereVisible = enabled;
     if (enabled) {
       this.autoRotate = false;
+      this.controls.enableRotate = false;
       this.controls.maxDistance = 15;
       this.controls.minDistance = 3.6;
       this.applyModes();
@@ -619,6 +620,7 @@ export class CelestialViewer {
       const topCamera = new THREE.Vector3(0, 2.05, 7.6);
       this.tweenCamera(topCamera, topTarget);
     } else {
+      this.controls.enableRotate = true;
       this.controls.maxDistance = 13;
       this.controls.minDistance = 4.6;
       this.applyModes();
@@ -797,6 +799,7 @@ export class CelestialViewer {
     this.layersVisible = false;
     this.orbiting = false;
     this.atmosphereVisible = false;
+    this.controls.enableRotate = true;
     this.relativeScale = false;
     this.controls.maxDistance = 13;
     this.controls.minDistance = 4.6;
@@ -816,6 +819,9 @@ export class CelestialViewer {
   clearSelection() {
     if (this.selectedMarker) this.selectedMarker.scale.setScalar(this.selectedMarker.userData.baseScale ?? 0.28);
     this.selectedMarker = null;
+    if (this.atmosphereVisible) {
+      this.setAtmosphere(false);
+    }
     this.callbacks.onSelect(null);
   }
 
@@ -897,7 +903,13 @@ export class CelestialViewer {
     this.pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
     this.raycaster.setFromCamera(this.pointer, this.camera);
     const hit = this.raycaster.intersectObjects([...this.markerMap.keys()], false)[0]?.object as THREE.Sprite | undefined;
-    if (!hit) { this.clearSelection(); return; }
+    if (!hit) {
+      this.clearSelection();
+      if (this.atmosphereVisible) {
+        this.setAtmosphere(false);
+      }
+      return;
+    }
     const hotspot = this.markerMap.get(hit);
     if (hotspot) {
       this.focusHotspot(hotspot);

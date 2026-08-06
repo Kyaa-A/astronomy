@@ -61,6 +61,8 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
             setSelected(hotspot);
             if (hotspot?.id === "atmosphere") {
               setAtmosphere(true);
+            } else if (!hotspot) {
+              setAtmosphere(false);
             }
           },
           onReady: setReady,
