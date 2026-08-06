@@ -172,7 +172,7 @@ export const celestialObjects: CelestialObject[] = [
       { id: "atmosphere", label: "Atmosphere", detail: "A protective envelope dominated by nitrogen and oxygen.", latitude: 43, longitude: 12, color: "#8de7ff" },
       { id: "oceans", label: "Ocean System", detail: "One connected body of salt water covering 71% of Earth and regulating climate through heat and carbon circulation.", latitude: -18, longitude: -145, color: "#2bbcff" },
       { id: "continents", label: "Continents", detail: "Moving plates continually reshape Earth's land.", latitude: 18, longitude: 34, color: "#74d39a" },
-      { id: "magnetosphere", label: "Magnetic Field", detail: "The geodynamo deflects much of the solar wind.", latitude: 68, longitude: 112, color: "#bd9cff" },
+      { id: "magnetosphere", label: "Magnetic Field", detail: "Generated mainly by motion in Earth’s liquid outer core, this magnetic envelope deflects much of the solar wind and helps protect the atmosphere.", latitude: 68, longitude: 112, color: "#bd9cff" },
       { id: "core", label: "Iron Core", detail: "A solid inner core within a flowing liquid-metal outer core.", latitude: -42, longitude: 58, color: "#ffb05e" },
     ],
     quiz: { question: "What creates Earth's global magnetic field?", options: ["Motion in its liquid outer core", "The Moon's gravity", "Charged clouds"], answer: "Motion in its liquid outer core", explanation: "Convecting conductive iron in the outer core powers the geodynamo." },

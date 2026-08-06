@@ -5,7 +5,7 @@ import { CircleDotDashed, Cloud, Gauge, Globe2, Layers3, Lock, Minus, Orbit, Plu
   Rotate3D, Sparkles, Tags, Telescope, Unlock, X, ZoomIn,
 } from "lucide-react";
 import type { CelestialHotspot, CelestialObject } from "../lib/celestial-data";
-import type { AtmospherePosition, CelestialViewer as ViewerInstance, ContinentPosition, LabelPosition, LayerPosition, OceanPosition, OrbitPlanetPosition } from "../lib/three/celestial-viewer";
+import type { AtmospherePosition, CelestialViewer as ViewerInstance, ContinentPosition, LabelPosition, LayerPosition, MagnetospherePosition, OceanPosition, OrbitPlanetPosition } from "../lib/three/celestial-viewer";
 
 type Props = {
   object: CelestialObject;
@@ -44,6 +44,9 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
   const [oceanSystem, setOceanSystem] = useState(false);
   const [oceanPositions, setOceanPositions] = useState<OceanPosition[]>([]);
   const [selectedOcean, setSelectedOcean] = useState<OceanPosition | null>(null);
+  const [magnetosphere, setMagnetosphere] = useState(false);
+  const [magnetospherePositions, setMagnetospherePositions] = useState<MagnetospherePosition[]>([]);
+  const [selectedMagnetosphere, setSelectedMagnetosphere] = useState<MagnetospherePosition | null>(null);
   const statusTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => { objectRef.current = object; }, [object]);
@@ -69,31 +72,44 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
               setContinents(false);
               setLayers(false);
               setOceanSystem(false);
+              setMagnetosphere(false);
             } else if (hotspot?.id === "continents") {
               setContinents(true);
               setAtmosphere(false);
               setLayers(false);
               setOceanSystem(false);
+              setMagnetosphere(false);
             } else if (hotspot?.id === "core") {
               setLayers(true);
               setAtmosphere(false);
               setContinents(false);
               setOceanSystem(false);
+              setMagnetosphere(false);
             } else if (hotspot?.id === "oceans") {
               setOceanSystem(true);
               setAtmosphere(false);
               setContinents(false);
               setLayers(false);
+              setMagnetosphere(false);
               viewer?.setOceanSystem(true);
+            } else if (hotspot?.id === "magnetosphere") {
+              setMagnetosphere(true);
+              setAtmosphere(false);
+              setContinents(false);
+              setLayers(false);
+              setOceanSystem(false);
+              viewer?.setMagnetosphere(true);
             } else if (!hotspot) {
               setAtmosphere(false);
               setContinents(false);
               setLayers(false);
               setOceanSystem(false);
+              setMagnetosphere(false);
               viewer?.setLayers(false);
               viewer?.setAtmosphere(false);
               viewer?.setContinents(false);
               viewer?.setOceanSystem(false);
+              viewer?.setMagnetosphere(false);
             }
           },
           onReady: setReady,
@@ -105,6 +121,7 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
           onAtmosphereUpdate: setAtmospherePositions,
           onContinentsUpdate: setContinentPositions,
           onOceanSystemUpdate: setOceanPositions,
+          onMagnetosphereUpdate: setMagnetospherePositions,
         });
         viewerRef.current = viewer;
         viewer.setAutoRotate(autoRotateRef.current);
@@ -292,8 +309,8 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
         </div>
       )}
 
-      {/* Floating label tags */}
-      {labels && !layers && labelPositions.length > 0 && (
+      {/* Surface hotspot markers (ONLY rendered when NO dedicated 3D mode is active) */}
+      {labels && !layers && !atmosphere && !continents && !oceanSystem && !magnetosphere && labelPositions.length > 0 && (
         <div className="label-overlay" aria-hidden="true">
           {labelPositions.map((lp) => {
             const isSelected = selected?.id === lp.id;
@@ -434,6 +451,43 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
         </div>
       )}
 
+      {/* Floating 3D Magnetosphere structure tags */}
+      {magnetosphere && magnetospherePositions.length > 0 && (
+        <div className="label-overlay">
+          {magnetospherePositions.map((mp) => (
+            !mp.behind && (
+              <div
+                key={mp.id}
+                className={`magnetosphere-tag ${selectedMagnetosphere?.id === mp.id ? "selected" : ""}`}
+                style={{
+                  left: `${mp.x}px`,
+                  top: `${mp.y}px`,
+                  transform: `translate(-50%, -100%) scale(${mp.scale})`,
+                  "--tag-color": mp.color,
+                } as React.CSSProperties}
+                onClick={() => setSelectedMagnetosphere(mp)}
+              >
+                <i className="mag-dot" />
+                <span>
+                  <b>{mp.name}</b>
+                  <small>{mp.role}</small>
+                </span>
+              </div>
+            )
+          ))}
+        </div>
+      )}
+
+      {/* Selected Magnetosphere structure detail card */}
+      {magnetosphere && selectedMagnetosphere && (
+        <div className="magnetosphere-card-popover" style={{ "--tag-color": selectedMagnetosphere.color } as React.CSSProperties}>
+          <button className="magnetosphere-card-close" onClick={() => setSelectedMagnetosphere(null)} aria-label="Close magnetosphere info">×</button>
+          <div className="magnetosphere-card-badge">{selectedMagnetosphere.role}</div>
+          <h3>{selectedMagnetosphere.name}</h3>
+          <p className="magnetosphere-card-detail">{selectedMagnetosphere.detail}</p>
+        </div>
+      )}
+
       <aside className={`viewer-tip ${selected ? "active-feature" : ""}`} aria-label={selected ? `${selected.label} details` : "Viewer instructions"}>
         {selected ? (
           <div className="top-right-callout" style={{ "--marker": selected.color } as React.CSSProperties}>
@@ -441,6 +495,22 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
             <small>Surface feature · {selected.latitude}°N {selected.longitude}°E</small>
             <b>{selected.label}</b>
             <p>{selected.detail}</p>
+            {selected.id === "core" && (
+              <button
+                type="button"
+                className="callout-focus-btn"
+                style={{ borderColor: "rgba(189,156,255,.4)", background: "rgba(189,156,255,.12)", color: "#c8b0ff", marginTop: "8px" }}
+                onClick={() => {
+                  setMagnetosphere(true);
+                  setLayers(false);
+                  viewerRef.current?.setMagnetosphere(true);
+                  showStatus("3D Magnetosphere view activated");
+                }}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Generates Earth’s Magnetic Field</span>
+              </button>
+            )}
           </div>
         ) : (
           <>

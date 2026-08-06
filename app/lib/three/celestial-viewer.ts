@@ -17,6 +17,7 @@ type ViewerCallbacks = {
   onAtmosphereUpdate?: (layers: AtmospherePosition[]) => void;
   onContinentsUpdate?: (continents: ContinentPosition[]) => void;
   onOceanSystemUpdate?: (oceans: OceanPosition[]) => void;
+  onMagnetosphereUpdate?: (structures: MagnetospherePosition[]) => void;
 };
 
 const HOME_CAMERA = new THREE.Vector3(0, 0.3, 9.4);
@@ -117,6 +118,29 @@ export const OCEAN_SYSTEM_MARKERS = [
   { id: "pacific-gyre", name: "North Pacific Gyre", type: "landmark", lat: 28, lon: -170, detail: "Major ocean circulation system.", climateRole: "Clockwise wind-driven current system transferring equatorial heat across open Pacific.", color: "#5ce6ff" },
   { id: "atlantic-gyre", name: "North Atlantic Gyre", type: "landmark", lat: 30, lon: -40, detail: "Gulf Stream thermal engine.", climateRole: "Distributes tropical warmth northward to moderate North American & European climates.", color: "#7ae0ff" },
   { id: "circumpolar", name: "Antarctic Circumpolar Current", type: "landmark", lat: -55, lon: 0, detail: "Longest & strongest ocean current.", climateRole: "Massive uninhibited current delivering 135 million m³/s of ocean flow around Antarctica.", color: "#99ebff" },
+] as const;
+
+export type MagnetospherePosition = {
+  id: string;
+  name: string;
+  role: string;
+  detail: string;
+  color: string;
+  lat: number;
+  lon: number;
+  radiusOffset: number;
+  x: number;
+  y: number;
+  behind: boolean;
+  scale: number;
+};
+
+export const MAGNETOSPHERE_STRUCTURES = [
+  { id: "bow-shock", name: "Bow Shock", role: "Supersonic Solar Wind Boundary", detail: "Curved shock wave formed where 400 km/s solar wind plasma abruptly decelerates upon hitting Earth's magnetic barrier.", color: "#ff6b8b", lat: 0, lon: 130, radiusOffset: 5.2 },
+  { id: "magnetopause", name: "Magnetopause", role: "Outer Pressure Balance Barrier", detail: "Outer boundary of Earth's geomagnetic field where magnetic pressure balances inward solar wind dynamic pressure.", color: "#72f7ff", lat: 10, lon: 110, radiusOffset: 4.1 },
+  { id: "van-allen", name: "Van Allen Belts", role: "Trapped Radiation Belts", detail: "Dual toroidal belts of high-energy protons and electrons captured from cosmic radiation by Earth's geomagnetic field.", color: "#c078ff", lat: 25, lon: -60, radiusOffset: 2.8 },
+  { id: "auroral-oval", name: "Auroral Oval", role: "Polar Ionospheric Light Rings", detail: "Glowing polar rings produced when energetic solar particles funnel down geomagnetic lines into high atmospheric gases.", color: "#46ffb5", lat: 72, lon: 0, radiusOffset: 2.18 },
+  { id: "magnetotail", name: "Magnetotail", role: "Nightside Magnetic Tail", detail: "Swept-back magnetic tail stretching millions of kilometers downwind away from the Sun on Earth's nightside.", color: "#5499ff", lat: -5, lon: -155, radiusOffset: 5.8 },
 ] as const;
 
 const ATMOSPHERE_LAYERS_3D = [
@@ -594,29 +618,82 @@ export class CelestialViewer {
 
   private createMagnetosphere() {
     this.magnetosphereGroup.clear();
-    const loops = 16;
+    const loops = 18;
     const pointsPerLoop = 64;
 
-    for (let i = 0; i < loops; i++) {
+    // 1. Curved Cyan-Violet Dipole Field Lines
+    for (let i = 0; i < loops; i += 1) {
       const angle = (i / loops) * Math.PI * 2;
       const points: THREE.Vector3[] = [];
-      for (let j = 0; j <= pointsPerLoop; j++) {
+      for (let j = 0; j <= pointsPerLoop; j += 1) {
         const t = (j / pointsPerLoop) * Math.PI;
-        const r = PLANET_RADIUS * (1.1 + 1.8 * Math.sin(t));
+        const r = PLANET_RADIUS * (1.12 + 2.0 * Math.sin(t));
         const x = r * Math.sin(t) * Math.cos(angle);
         const z = r * Math.sin(t) * Math.sin(angle);
-        const y = PLANET_RADIUS * 1.6 * Math.cos(t);
+        const y = PLANET_RADIUS * 1.65 * Math.cos(t);
         points.push(new THREE.Vector3(x, y, z));
       }
       const geometry = new THREE.BufferGeometry().setFromPoints(points);
       const material = new THREE.LineBasicMaterial({
-        color: 0x9b7bff,
+        color: i % 2 === 0 ? 0x6ce6ff : 0x9b7bff,
         transparent: true,
-        opacity: 0.55,
+        opacity: 0.65,
       });
       const line = new THREE.Line(geometry, material);
       this.magnetosphereGroup.add(line);
     }
+
+    // 2. Translucent Teardrop Magnetosphere Shell (Compressed dayside x>0, stretched nightside x<0)
+    const shellGeom = new THREE.SphereGeometry(PLANET_RADIUS * 1.8, 48, 36);
+    const posAttr = shellGeom.attributes.position;
+    for (let i = 0; i < posAttr.count; i += 1) {
+      let x = posAttr.getX(i);
+      const y = posAttr.getY(i);
+      const z = posAttr.getZ(i);
+      if (x < 0) {
+        x *= 1.8; // Stretch nightside magnetotail
+      } else {
+        x *= 0.85; // Compress dayside bow shock
+      }
+      posAttr.setXYZ(i, x, y, z);
+    }
+    shellGeom.computeVertexNormals();
+
+    const shellMat = new THREE.MeshStandardMaterial({
+      color: 0x6e52ff,
+      emissive: 0x3d26aa,
+      emissiveIntensity: 0.5,
+      transparent: true,
+      opacity: 0.22,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+    const shellMesh = new THREE.Mesh(shellGeom, shellMat);
+    this.magnetosphereGroup.add(shellMesh);
+
+    // 3. Polar Auroral Glowing Rings (North & South Ovals)
+    const northAuroralPos = positionFromCoordinates(72, 0, PLANET_RADIUS * 1.018);
+    const southAuroralPos = positionFromCoordinates(-72, 0, PLANET_RADIUS * 1.018);
+    const auroralRingGeom = new THREE.RingGeometry(0.35, 0.58, 32);
+    const auroralMat = new THREE.MeshBasicMaterial({
+      color: 0x46ffb5,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.75,
+      blending: THREE.AdditiveBlending,
+    });
+
+    const northAuroral = new THREE.Mesh(auroralRingGeom, auroralMat);
+    northAuroral.position.copy(northAuroralPos);
+    northAuroral.lookAt(northAuroralPos.clone().multiplyScalar(2));
+    this.magnetosphereGroup.add(northAuroral);
+
+    const southAuroral = new THREE.Mesh(auroralRingGeom, auroralMat);
+    southAuroral.position.copy(southAuroralPos);
+    southAuroral.lookAt(southAuroralPos.clone().multiplyScalar(2));
+    this.magnetosphereGroup.add(southAuroral);
+
     this.magnetosphereGroup.visible = false;
   }
 
@@ -1069,6 +1146,43 @@ export class CelestialViewer {
     return results;
   }
 
+  getMagnetospherePositions(): MagnetospherePosition[] {
+    if (!this.magnetosphereVisible) return [];
+    const results: MagnetospherePosition[] = [];
+    const w = this.container.clientWidth;
+    const h = this.container.clientHeight;
+    const distance = this.camera.position.distanceTo(this.controls.target);
+    const scale = THREE.MathUtils.clamp(8.0 / distance, 0.7, 1.8);
+    const bodyCenter = this.body.getWorldPosition(new THREE.Vector3());
+
+    for (const marker of MAGNETOSPHERE_STRUCTURES) {
+      const localPos = positionFromCoordinates(marker.lat, marker.lon, PLANET_RADIUS * marker.radiusOffset);
+      localPos.applyEuler(this.body.rotation);
+      const worldPos = bodyCenter.clone().add(localPos);
+
+      const camDir = worldPos.clone().sub(this.camera.position).normalize();
+      const toCenter = bodyCenter.clone().sub(this.camera.position).normalize();
+      const behind = camDir.dot(toCenter) > 0 && worldPos.distanceTo(this.camera.position) > bodyCenter.distanceTo(this.camera.position);
+
+      const projected = worldPos.clone().project(this.camera);
+      results.push({
+        id: marker.id,
+        name: marker.name,
+        role: marker.role,
+        detail: marker.detail,
+        color: marker.color,
+        lat: marker.lat,
+        lon: marker.lon,
+        radiusOffset: marker.radiusOffset,
+        x: (projected.x * 0.5 + 0.5) * w,
+        y: (-projected.y * 0.5 + 0.5) * h,
+        behind,
+        scale,
+      });
+    }
+    return results;
+  }
+
   private cameraTweenStartTime = 0;
 
   private tweenCamera(pos: THREE.Vector3, target: THREE.Vector3) {
@@ -1304,6 +1418,10 @@ export class CelestialViewer {
         line.rotation.z += delta * (0.15 + idx * 0.05);
       });
       this.callbacks.onOceanSystemUpdate?.(this.getOceanPositions());
+    }
+    // Magnetosphere position callback
+    if (this.magnetosphereVisible) {
+      this.callbacks.onMagnetosphereUpdate?.(this.getMagnetospherePositions());
     }
     this.controls.update(delta);
     this.updateCallout();
