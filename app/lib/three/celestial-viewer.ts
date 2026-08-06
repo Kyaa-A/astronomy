@@ -735,15 +735,15 @@ export class CelestialViewer {
   setLayers(enabled: boolean) {
     this.layersVisible = enabled;
     if (enabled) {
-      this.autoRotate = false;
+      this.autoRotate = true;
       this.controls.enableRotate = true;
       const target = new THREE.Vector3(0, 0, 0);
-      const cam = new THREE.Vector3(0, 0, 8.0);
+      const cam = new THREE.Vector3(0, 0, 7.5);
       this.tweenCamera(cam, target);
       this.body.rotation.x = 0;
-      this.body.rotation.y = THREE.MathUtils.degToRad(-90);
+      this.body.rotation.y = THREE.MathUtils.degToRad(90);
       this.layerGroup.rotation.x = 0;
-      this.layerGroup.rotation.y = THREE.MathUtils.degToRad(-90);
+      this.layerGroup.rotation.y = THREE.MathUtils.degToRad(90);
     } else {
       this.controls.enableRotate = true;
       this.tweenCamera(HOME_CAMERA.clone(), HOME_TARGET.clone());
@@ -811,16 +811,16 @@ export class CelestialViewer {
     const distance = this.camera.position.distanceTo(this.controls.target);
     const scale = THREE.MathUtils.clamp(7.5 / distance, 0.65, 2.0);
 
-    // Top-to-bottom positions landing accurately over each layer ring on the front-facing cutaway face
+    // Top-to-bottom positions landing accurately down the vertical center line of each concentric ring
     const labelOffsets = [
-      new THREE.Vector3(-0.45, 1.45, 0.0), // Crust & Surface
-      new THREE.Vector3(-0.15, 0.95, 0.0), // Convecting Mantle
-      new THREE.Vector3(0.08, 0.42, 0.0),  // Liquid Outer Core
-      new THREE.Vector3(0.02, -0.15, 0.0), // Solid Inner Core
+      new THREE.Vector3(0.0, 1.60, 0.4), // Crust & Surface
+      new THREE.Vector3(0.0, 1.00, 0.4), // Convecting Mantle
+      new THREE.Vector3(0.0, 0.40, 0.4), // Liquid Outer Core
+      new THREE.Vector3(0.0, -0.20, 0.4), // Solid Inner Core
     ];
 
     return this.layerMeshes.map((mesh, index) => {
-      const offset = labelOffsets[index] ?? new THREE.Vector3(0.0, 0.0, 0.0);
+      const offset = labelOffsets[index] ?? new THREE.Vector3(0.0, 0.0, 0.4);
       const localPos = offset.clone();
       localPos.applyEuler(this.layerGroup.rotation);
       const worldPos = this.body.getWorldPosition(new THREE.Vector3()).add(localPos);
