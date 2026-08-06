@@ -367,6 +367,12 @@ export class CelestialViewer {
   private orbitPlanetMeshes: Map<string, THREE.Mesh> = new Map();
   private oceanGroup = new THREE.Group();
   private currentLines: THREE.LineLoop[] = [];
+  private surfaceMesh: THREE.Mesh | null = null;
+  private cloudMesh: THREE.Mesh | null = null;
+  private solarWindParticles: THREE.Points | null = null;
+  private solarWindPositions: Float32Array = new Float32Array(0);
+  private solarWindVelocities: Float32Array = new Float32Array(0);
+  private auroralMeshes: THREE.Mesh[] = [];
 
   constructor(container: HTMLElement, callbacks: ViewerCallbacks) {
     this.container = container;
@@ -504,6 +510,7 @@ export class CelestialViewer {
     });
     const sphere = new THREE.Mesh(geometry, material);
     sphere.name = "celestial-surface";
+    this.surfaceMesh = sphere;
     this.body.add(sphere);
     this.body.rotation.z = THREE.MathUtils.degToRad(object.visual.tilt);
     this.markerGroup.rotation.z = this.body.rotation.z;
@@ -524,6 +531,7 @@ export class CelestialViewer {
       );
       cloudShell.name = "cloud-shell";
       cloudShell.rotation.y = 0.18;
+      this.cloudMesh = cloudShell;
       this.body.add(cloudShell);
     }
 
@@ -618,16 +626,17 @@ export class CelestialViewer {
 
   private createMagnetosphere() {
     this.magnetosphereGroup.clear();
+    this.auroralMeshes = [];
     const loops = 18;
     const pointsPerLoop = 64;
 
-    // 1. Curved Cyan-Violet Dipole Field Lines
+    // 1. Curved Cyan-Violet Dipole Field Lines (S to N loops)
     for (let i = 0; i < loops; i += 1) {
       const angle = (i / loops) * Math.PI * 2;
       const points: THREE.Vector3[] = [];
       for (let j = 0; j <= pointsPerLoop; j += 1) {
         const t = (j / pointsPerLoop) * Math.PI;
-        const r = PLANET_RADIUS * (1.12 + 2.0 * Math.sin(t));
+        const r = PLANET_RADIUS * (1.1 + 2.1 * Math.pow(Math.sin(t), 2));
         const x = r * Math.sin(t) * Math.cos(angle);
         const z = r * Math.sin(t) * Math.sin(angle);
         const y = PLANET_RADIUS * 1.65 * Math.cos(t);
@@ -635,36 +644,36 @@ export class CelestialViewer {
       }
       const geometry = new THREE.BufferGeometry().setFromPoints(points);
       const material = new THREE.LineBasicMaterial({
-        color: i % 2 === 0 ? 0x6ce6ff : 0x9b7bff,
+        color: i % 2 === 0 ? 0x5ce6ff : 0xa664ff,
         transparent: true,
-        opacity: 0.65,
+        opacity: 0.7,
       });
       const line = new THREE.Line(geometry, material);
       this.magnetosphereGroup.add(line);
     }
 
-    // 2. Translucent Teardrop Magnetosphere Shell (Compressed dayside x>0, stretched nightside x<0)
-    const shellGeom = new THREE.SphereGeometry(PLANET_RADIUS * 1.8, 48, 36);
+    // 2. Translucent Asymmetric Teardrop Magnetosphere Shell
+    const shellGeom = new THREE.SphereGeometry(PLANET_RADIUS * 1.75, 64, 48);
     const posAttr = shellGeom.attributes.position;
     for (let i = 0; i < posAttr.count; i += 1) {
       let x = posAttr.getX(i);
       const y = posAttr.getY(i);
       const z = posAttr.getZ(i);
-      if (x < 0) {
-        x *= 1.8; // Stretch nightside magnetotail
+      if (x > 0) {
+        x *= 0.78; // Compressed dayside facing Sun
       } else {
-        x *= 0.85; // Compress dayside bow shock
+        x *= 2.3;  // Extended magnetotail
       }
       posAttr.setXYZ(i, x, y, z);
     }
     shellGeom.computeVertexNormals();
 
     const shellMat = new THREE.MeshStandardMaterial({
-      color: 0x6e52ff,
-      emissive: 0x3d26aa,
-      emissiveIntensity: 0.5,
+      color: 0x5c42ff,
+      emissive: 0x2e18aa,
+      emissiveIntensity: 0.6,
       transparent: true,
-      opacity: 0.22,
+      opacity: 0.2,
       side: THREE.DoubleSide,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
@@ -672,27 +681,58 @@ export class CelestialViewer {
     const shellMesh = new THREE.Mesh(shellGeom, shellMat);
     this.magnetosphereGroup.add(shellMesh);
 
-    // 3. Polar Auroral Glowing Rings (North & South Ovals)
-    const northAuroralPos = positionFromCoordinates(72, 0, PLANET_RADIUS * 1.018);
-    const southAuroralPos = positionFromCoordinates(-72, 0, PLANET_RADIUS * 1.018);
-    const auroralRingGeom = new THREE.RingGeometry(0.35, 0.58, 32);
+    // 3. Thin Pulsing Green/Purple Auroral Rings (North & South Ovals)
+    const northAuroralPos = positionFromCoordinates(72, 0, PLANET_RADIUS * 1.016);
+    const southAuroralPos = positionFromCoordinates(-72, 0, PLANET_RADIUS * 1.016);
+    const auroralRingGeom = new THREE.RingGeometry(0.32, 0.55, 36);
     const auroralMat = new THREE.MeshBasicMaterial({
       color: 0x46ffb5,
       side: THREE.DoubleSide,
       transparent: true,
-      opacity: 0.75,
+      opacity: 0.8,
       blending: THREE.AdditiveBlending,
     });
 
-    const northAuroral = new THREE.Mesh(auroralRingGeom, auroralMat);
+    const northAuroral = new THREE.Mesh(auroralRingGeom, auroralMat.clone());
     northAuroral.position.copy(northAuroralPos);
     northAuroral.lookAt(northAuroralPos.clone().multiplyScalar(2));
     this.magnetosphereGroup.add(northAuroral);
+    this.auroralMeshes.push(northAuroral);
 
-    const southAuroral = new THREE.Mesh(auroralRingGeom, auroralMat);
+    const southAuroral = new THREE.Mesh(auroralRingGeom, auroralMat.clone());
     southAuroral.position.copy(southAuroralPos);
     southAuroral.lookAt(southAuroralPos.clone().multiplyScalar(2));
     this.magnetosphereGroup.add(southAuroral);
+    this.auroralMeshes.push(southAuroral);
+
+    // 4. Solar Wind Particle Stream (streaming along -X toward Earth)
+    const particleCount = 180;
+    this.solarWindPositions = new Float32Array(particleCount * 3);
+    this.solarWindVelocities = new Float32Array(particleCount * 3);
+    const seedRnd = seededRandom(9281);
+    for (let i = 0; i < particleCount; i += 1) {
+      const index = i * 3;
+      this.solarWindPositions[index] = 10 + seedRnd() * 6; // Start on Sun side (+X)
+      this.solarWindPositions[index + 1] = (seedRnd() - 0.5) * 6;
+      this.solarWindPositions[index + 2] = (seedRnd() - 0.5) * 6;
+
+      this.solarWindVelocities[index] = -0.07 - seedRnd() * 0.05;
+      this.solarWindVelocities[index + 1] = 0;
+      this.solarWindVelocities[index + 2] = 0;
+    }
+
+    const windGeom = new THREE.BufferGeometry();
+    windGeom.setAttribute("position", new THREE.BufferAttribute(this.solarWindPositions, 3));
+    const windMat = new THREE.PointsMaterial({
+      color: 0x88eeff,
+      size: 0.085,
+      transparent: true,
+      opacity: 0.85,
+      blending: THREE.AdditiveBlending,
+      sizeAttenuation: true,
+    });
+    this.solarWindParticles = new THREE.Points(windGeom, windMat);
+    this.magnetosphereGroup.add(this.solarWindParticles);
 
     this.magnetosphereGroup.visible = false;
   }
@@ -835,6 +875,17 @@ export class CelestialViewer {
     this.magnetosphereGroup.visible = this.magnetosphereVisible && !this.orbiting;
     this.oceanGroup.visible = this.oceanSystemVisible && !this.orbiting;
     this.body.visible = !this.layersVisible && !this.orbiting;
+
+    if (this.surfaceMesh) {
+      const mat = this.surfaceMesh.material as THREE.MeshStandardMaterial;
+      mat.color.setHex(this.magnetosphereVisible ? 0x445577 : 0xffffff);
+      mat.emissiveIntensity = this.magnetosphereVisible ? 0.05 : 0.2;
+    }
+    if (this.cloudMesh) {
+      const mat = this.cloudMesh.material as THREE.MeshStandardMaterial;
+      mat.opacity = this.magnetosphereVisible ? 0.18 : 0.48;
+    }
+
     const scale = this.relativeScale && this.current
       ? THREE.MathUtils.clamp(0.58 + Math.log10(this.current.diameterKm / 3_475) * 0.24, 0.52, 1.38)
       : 1;
@@ -1427,8 +1478,39 @@ export class CelestialViewer {
       });
       this.callbacks.onOceanSystemUpdate?.(this.getOceanPositions());
     }
-    // Magnetosphere position callback
+    // Magnetosphere position callback & animations
     if (this.magnetosphereVisible) {
+      const pulse = 0.55 + 0.35 * Math.sin(time * 0.0035);
+      this.auroralMeshes.forEach((m) => {
+        (m.material as THREE.MeshBasicMaterial).opacity = pulse;
+      });
+
+      if (this.solarWindParticles) {
+        const positions = this.solarWindParticles.geometry.attributes.position.array as Float32Array;
+        for (let i = 0; i < positions.length; i += 3) {
+          positions[i] += this.solarWindVelocities[i]; // Stream toward -X
+          const y = positions[i + 1];
+          const z = positions[i + 2];
+          const distToAxis = Math.sqrt(y * y + z * z);
+          const x = positions[i];
+
+          // Deflect around bow shock / magnetopause when approaching dayside (+X ~ 3.5)
+          if (x > -3.0 && x < 4.8 && distToAxis < 3.2) {
+            const factor = 1.035;
+            positions[i + 1] *= factor;
+            positions[i + 2] *= factor;
+          }
+
+          // Reset particle to Sun side (+X) when past magnetotail (-10)
+          if (positions[i] < -10) {
+            positions[i] = 11 + Math.random() * 4;
+            positions[i + 1] = (Math.random() - 0.5) * 6;
+            positions[i + 2] = (Math.random() - 0.5) * 6;
+          }
+        }
+        this.solarWindParticles.geometry.attributes.position.needsUpdate = true;
+      }
+
       this.callbacks.onMagnetosphereUpdate?.(this.getMagnetospherePositions());
     }
     this.controls.update(delta);
