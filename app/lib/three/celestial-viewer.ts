@@ -736,20 +736,16 @@ export class CelestialViewer {
     const distance = this.camera.position.distanceTo(this.controls.target);
     const scale = THREE.MathUtils.clamp(7.5 / distance, 0.65, 2.0);
 
-    const ARC_PARAMS: Record<string, { arcRadius: number; arcOffset: number }> = {
-      troposphere: { arcRadius: 360, arcOffset: 22 },
-      stratosphere: { arcRadius: 410, arcOffset: 25 },
-      mesosphere: { arcRadius: 470, arcOffset: 28 },
-      thermosphere: { arcRadius: 530, arcOffset: 31 },
-      exosphere: { arcRadius: 600, arcOffset: 34 },
-    };
+    // Project a point directly above the camera target to find the screen-center X.
+    // This compensates for zoomToCursor and any camera drift away from X = 0.
+    const centerProbe = new THREE.Vector3(this.controls.target.x, 0, this.controls.target.z).project(this.camera);
+    const screenCenterX = (centerProbe.x * 0.5 + 0.5) * w;
 
     return this.atmosphereMeshes.map((mesh) => {
       const data = mesh.userData as { id: string; name: string; labelRadius: number; range: string; temp: string; feature: string; color: number };
       const r = data.labelRadius;
-      const worldPos = new THREE.Vector3(0, r, 0);
+      const worldPos = new THREE.Vector3(this.controls.target.x, r, this.controls.target.z);
       const projected = worldPos.project(this.camera);
-      const arc = ARC_PARAMS[data.id] ?? { arcRadius: 450, arcOffset: 28 };
       return {
         id: data.id,
         name: data.name,
@@ -757,11 +753,11 @@ export class CelestialViewer {
         temp: data.temp,
         feature: data.feature,
         color: `#${data.color.toString(16).padStart(6, "0")}`,
-        x: (projected.x * 0.5 + 0.5) * w,
+        x: screenCenterX,
         y: (-projected.y * 0.5 + 0.5) * h,
         scale,
-        arcRadius: arc.arcRadius,
-        arcOffset: arc.arcOffset,
+        arcRadius: 0,
+        arcOffset: 0,
       };
     });
   }

@@ -278,7 +278,7 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
         </div>
       )}
 
-      {/* Floating 3D atmosphere curved SVG layer tags */}
+      {/* Floating 3D atmosphere layer tags */}
       {atmosphere && atmospherePositions.length > 0 && (
         <div className="label-overlay" aria-hidden="true">
           {atmospherePositions.map((ap) => (
@@ -292,14 +292,7 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
                 color: ap.color,
               } as React.CSSProperties}
             >
-              <svg width="460" height="90" viewBox="-230 -45 460 90" className="atmosphere-arc-svg">
-                <path id={`arc-${ap.id}`} d={`M -210 0 A ${ap.arcRadius} ${ap.arcRadius} 0 0 1 210 0`} fill="none" />
-                <text fill="currentColor">
-                  <textPath href={`#arc-${ap.id}`} startOffset="50%" textAnchor="middle">
-                    {ap.name}
-                  </textPath>
-                </text>
-              </svg>
+              {ap.name}
             </div>
           ))}
         </div>
