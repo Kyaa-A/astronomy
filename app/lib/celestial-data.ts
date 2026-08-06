@@ -170,7 +170,7 @@ export const celestialObjects: CelestialObject[] = [
     accent: "#64d8ff", secondary: "#9ee7c2", visual: { base: "#1266a8", light: "#62c6ef", dark: "#092e5b", atmosphere: "#4cb8ff", tilt: 23.44, roughness: 0.78, spots: 20 },
     hotspots: [
       { id: "atmosphere", label: "Atmosphere", detail: "A protective envelope dominated by nitrogen and oxygen.", latitude: 43, longitude: 12, color: "#8de7ff" },
-      { id: "oceans", label: "Global Ocean", detail: "Connected saltwater basins regulate climate and support life.", latitude: -18, longitude: -145, color: "#2bbcff" },
+      { id: "oceans", label: "Ocean System", detail: "One connected body of salt water covering 71% of Earth and regulating climate through heat and carbon circulation.", latitude: -18, longitude: -145, color: "#2bbcff" },
       { id: "continents", label: "Continents", detail: "Moving plates continually reshape Earth's land.", latitude: 18, longitude: 34, color: "#74d39a" },
       { id: "magnetosphere", label: "Magnetic Field", detail: "The geodynamo deflects much of the solar wind.", latitude: 68, longitude: 112, color: "#bd9cff" },
       { id: "core", label: "Iron Core", detail: "A solid inner core within a flowing liquid-metal outer core.", latitude: -42, longitude: 58, color: "#ffb05e" },

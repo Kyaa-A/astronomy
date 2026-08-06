@@ -14,8 +14,9 @@ type ViewerCallbacks = {
   onLayersUpdate?: (positions: LayerPosition[]) => void;
   onOrbitAngle?: (degrees: number) => void;
   onOrbitPlanetsUpdate?: (positions: OrbitPlanetPosition[]) => void;
-  onAtmosphereUpdate?: (positions: AtmospherePosition[]) => void;
-  onContinentsUpdate?: (positions: ContinentPosition[]) => void;
+  onAtmosphereUpdate?: (layers: AtmospherePosition[]) => void;
+  onContinentsUpdate?: (continents: ContinentPosition[]) => void;
+  onOceanSystemUpdate?: (oceans: OceanPosition[]) => void;
 };
 
 const HOME_CAMERA = new THREE.Vector3(0, 0.3, 9.4);
@@ -85,6 +86,37 @@ const CONTINENT_MARKERS = [
   { id: "indian-ocean", name: "Indian Ocean", type: "ocean", latitude: -20, longitude: 80, area: "70.56M km²", color: "#22aadd" },
   { id: "arctic-ocean", name: "Arctic Ocean", type: "ocean", latitude: 85, longitude: 0, area: "14.06M km²", color: "#88ccee" },
   { id: "southern-ocean", name: "Southern Ocean", type: "ocean", latitude: -65, longitude: 0, area: "21.96M km²", color: "#66bbdd" },
+] as const;
+
+export type OceanPosition = {
+  id: string;
+  name: string;
+  type: "basin" | "landmark";
+  lat: number;
+  lon: number;
+  areaKm2?: string;
+  avgDepthM?: string;
+  deepestPoint?: string;
+  climateRole: string;
+  detail?: string;
+  color: string;
+  x: number;
+  y: number;
+  behind: boolean;
+  scale: number;
+};
+
+export const OCEAN_SYSTEM_MARKERS = [
+  { id: "pacific", name: "Pacific Ocean", type: "basin", lat: 0, lon: -160, areaKm2: "165.25M km²", avgDepthM: "4,280 m", deepestPoint: "Mariana Trench (10,994 m)", climateRole: "Largest heat reservoir on Earth, driving global weather patterns and El Niño cycles.", color: "#2bbcff" },
+  { id: "atlantic", name: "Atlantic Ocean", type: "basin", lat: 10, lon: -30, areaKm2: "106.46M km²", avgDepthM: "3,646 m", deepestPoint: "Puerto Rico Trench (8,376 m)", climateRole: "Drives the Atlantic Meridional Overturning Circulation (AMOC) heat conveyor belt.", color: "#46c4ff" },
+  { id: "indian", name: "Indian Ocean", type: "basin", lat: -20, lon: 80, areaKm2: "70.56M km²", avgDepthM: "3,741 m", deepestPoint: "Java Trench (7,258 m)", climateRole: "Powers Asian monsoon precipitation cycles and tropical thermal exchange.", color: "#00d5e8" },
+  { id: "arctic", name: "Arctic Ocean", type: "basin", lat: 82, lon: 0, areaKm2: "14.06M km²", avgDepthM: "1,205 m", deepestPoint: "Molloy Hole (5,550 m)", climateRole: "Polar sea ice buffer regulating global planetary albedo and cold water sinking.", color: "#b0f0ff" },
+  { id: "southern", name: "Southern Ocean", type: "basin", lat: -62, lon: 0, areaKm2: "21.96M km²", avgDepthM: "3,270 m", deepestPoint: "Factorian Deep (7,432 m)", climateRole: "Driven by circumpolar winds, storing up to 40% of anthropogenic carbon emissions.", color: "#6ce0ff" },
+  { id: "mariana", name: "Mariana Trench", type: "landmark", lat: 11.35, lon: 142.2, deepestPoint: "Challenger Deep (10,994 m / 36,070 ft)", detail: "World's deepest oceanic trench.", climateRole: "Hadal subduction trench plunging nearly 11 km into Earth's crust.", color: "#72f7ff" },
+  { id: "mid-atlantic", name: "Mid-Atlantic Ridge", type: "landmark", lat: 26, lon: -44, detail: "65,000 km volcanic underwater mountain belt.", climateRole: "Divergent seafloor spreading plate boundary continuously spawning new oceanic crust.", color: "#ffd15c" },
+  { id: "pacific-gyre", name: "North Pacific Gyre", type: "landmark", lat: 28, lon: -170, detail: "Major ocean circulation system.", climateRole: "Clockwise wind-driven current system transferring equatorial heat across open Pacific.", color: "#5ce6ff" },
+  { id: "atlantic-gyre", name: "North Atlantic Gyre", type: "landmark", lat: 30, lon: -40, detail: "Gulf Stream thermal engine.", climateRole: "Distributes tropical warmth northward to moderate North American & European climates.", color: "#7ae0ff" },
+  { id: "circumpolar", name: "Antarctic Circumpolar Current", type: "landmark", lat: -55, lon: 0, detail: "Longest & strongest ocean current.", climateRole: "Massive uninhibited current delivering 135 million m³/s of ocean flow around Antarctica.", color: "#99ebff" },
 ] as const;
 
 const ATMOSPHERE_LAYERS_3D = [
@@ -294,6 +326,7 @@ export class CelestialViewer {
   private atmosphereVisible = false;
   private continentsVisible = false;
   private magnetosphereVisible = false;
+  private oceanSystemVisible = false;
   private relativeScale = false;
   private visible = true;
   private disposed = false;
@@ -308,6 +341,8 @@ export class CelestialViewer {
   private layerAnimFrame = 0;
   private rotAnimFrame = 0;
   private orbitPlanetMeshes: Map<string, THREE.Mesh> = new Map();
+  private oceanGroup = new THREE.Group();
+  private currentLines: THREE.LineLoop[] = [];
 
   constructor(container: HTMLElement, callbacks: ViewerCallbacks) {
     this.container = container;
@@ -342,10 +377,11 @@ export class CelestialViewer {
 
     this.scene.add(this.world);
     this.world.add(this.body, this.markerGroup, this.layerGroup, this.orbitGroup, this.atmosphereGroup);
-    this.body.add(this.magnetosphereGroup);
+    this.body.add(this.magnetosphereGroup, this.oceanGroup);
     this.buildEnvironment();
     this.createAtmosphereLayers();
     this.createMagnetosphere();
+    this.createOceanGroup();
 
     const canvas = this.renderer.domElement;
     canvas.addEventListener("pointerdown", this.onPointerDown);
@@ -584,6 +620,59 @@ export class CelestialViewer {
     this.magnetosphereGroup.visible = false;
   }
 
+  private createOceanGroup() {
+    this.oceanGroup.clear();
+    this.currentLines = [];
+
+    const geom = new THREE.SphereGeometry(PLANET_RADIUS * 1.008, 64, 48);
+    const mat = new THREE.MeshStandardMaterial({
+      color: 0x11ccff,
+      emissive: 0x085588,
+      emissiveIntensity: 0.8,
+      transparent: true,
+      opacity: 0.32,
+      roughness: 0.1,
+      metalness: 0.8,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const shell = new THREE.Mesh(geom, mat);
+    this.oceanGroup.add(shell);
+
+    const currentSpecs = [
+      { lat: 28, lon: -170, radius: 0.6, color: 0x5ce6ff },
+      { lat: 30, lon: -40, radius: 0.45, color: 0x7ae0ff },
+      { lat: -55, lon: 0, radius: 1.75, color: 0x99ebff },
+    ];
+
+    currentSpecs.forEach((spec) => {
+      const points: THREE.Vector3[] = [];
+      const segments = 48;
+      const center = positionFromCoordinates(spec.lat, spec.lon, PLANET_RADIUS * 1.012);
+      for (let i = 0; i <= segments; i += 1) {
+        const theta = (i / segments) * Math.PI * 2;
+        const offset = new THREE.Vector3(
+          Math.cos(theta) * spec.radius * 0.35,
+          Math.sin(theta) * spec.radius * 0.35,
+          0
+        );
+        const p = center.clone().add(offset).normalize().multiplyScalar(PLANET_RADIUS * 1.014);
+        points.push(p);
+      }
+      const lineGeom = new THREE.BufferGeometry().setFromPoints(points);
+      const lineMat = new THREE.LineBasicMaterial({
+        color: spec.color,
+        transparent: true,
+        opacity: 0.65,
+      });
+      const line = new THREE.LineLoop(lineGeom, lineMat);
+      this.currentLines.push(line);
+      this.oceanGroup.add(line);
+    });
+
+    this.oceanGroup.visible = false;
+  }
+
   private createInternalLayers(object: CelestialObject) {
     this.layerMeshes = [];
     this.layerGroup.clear();
@@ -662,11 +751,12 @@ export class CelestialViewer {
   }
 
   private applyModes() {
-    this.markerGroup.visible = this.labelsVisible && !this.layersVisible && !this.orbiting && !this.atmosphereVisible && !this.continentsVisible && !this.magnetosphereVisible;
+    this.markerGroup.visible = this.labelsVisible && !this.layersVisible && !this.orbiting && !this.atmosphereVisible && !this.continentsVisible && !this.magnetosphereVisible && !this.oceanSystemVisible;
     this.layerGroup.visible = this.layersVisible && !this.orbiting;
     this.orbitGroup.visible = this.orbiting;
     this.atmosphereGroup.visible = this.atmosphereVisible && !this.orbiting;
     this.magnetosphereGroup.visible = this.magnetosphereVisible && !this.orbiting;
+    this.oceanGroup.visible = this.oceanSystemVisible && !this.orbiting;
     this.body.visible = !this.layersVisible && !this.orbiting;
     const scale = this.relativeScale && this.current
       ? THREE.MathUtils.clamp(0.58 + Math.log10(this.current.diameterKm / 3_475) * 0.24, 0.52, 1.38)
@@ -728,6 +818,19 @@ export class CelestialViewer {
     this.magnetosphereGroup.visible = enabled;
     if (enabled) {
       this.autoRotate = true;
+    }
+    this.applyModes();
+  }
+
+  setOceanSystem(enabled: boolean) {
+    this.oceanSystemVisible = enabled;
+    this.oceanGroup.visible = enabled;
+    if (enabled) {
+      this.autoRotate = true;
+      // Modest rotation toward the Pacific Ocean (-150°) at normal scale
+      this.body.rotation.x = THREE.MathUtils.degToRad(12);
+      this.body.rotation.y = THREE.MathUtils.degToRad(-150);
+      this.tweenCamera(HOME_CAMERA.clone(), HOME_TARGET.clone());
     }
     this.applyModes();
   }
@@ -916,6 +1019,46 @@ export class CelestialViewer {
         type: marker.type,
         area: marker.area,
         population: "population" in marker ? marker.population : undefined,
+        color: marker.color,
+        x: (projected.x * 0.5 + 0.5) * w,
+        y: (-projected.y * 0.5 + 0.5) * h,
+        behind,
+        scale,
+      });
+    }
+    return results;
+  }
+
+  getOceanPositions(): OceanPosition[] {
+    if (!this.oceanSystemVisible) return [];
+    const results: OceanPosition[] = [];
+    const w = this.container.clientWidth;
+    const h = this.container.clientHeight;
+    const distance = this.camera.position.distanceTo(this.controls.target);
+    const scale = THREE.MathUtils.clamp(8.0 / distance, 0.7, 1.8);
+    const bodyCenter = this.body.getWorldPosition(new THREE.Vector3());
+
+    for (const marker of OCEAN_SYSTEM_MARKERS) {
+      const localPos = positionFromCoordinates(marker.lat, marker.lon, PLANET_RADIUS * 1.04);
+      localPos.applyEuler(this.body.rotation);
+      const worldPos = bodyCenter.clone().add(localPos);
+
+      const camDir = worldPos.clone().sub(this.camera.position).normalize();
+      const toCenter = bodyCenter.clone().sub(this.camera.position).normalize();
+      const behind = camDir.dot(toCenter) > 0 && worldPos.distanceTo(this.camera.position) > bodyCenter.distanceTo(this.camera.position);
+
+      const projected = worldPos.clone().project(this.camera);
+      results.push({
+        id: marker.id,
+        name: marker.name,
+        type: marker.type,
+        lat: marker.lat,
+        lon: marker.lon,
+        areaKm2: "areaKm2" in marker ? marker.areaKm2 : undefined,
+        avgDepthM: "avgDepthM" in marker ? marker.avgDepthM : undefined,
+        deepestPoint: "deepestPoint" in marker ? marker.deepestPoint : undefined,
+        climateRole: marker.climateRole,
+        detail: "detail" in marker ? marker.detail : undefined,
         color: marker.color,
         x: (projected.x * 0.5 + 0.5) * w,
         y: (-projected.y * 0.5 + 0.5) * h,
@@ -1154,6 +1297,13 @@ export class CelestialViewer {
     // Continent position callback
     if (this.continentsVisible) {
       this.callbacks.onContinentsUpdate?.(this.getContinentPositions());
+    }
+    // Ocean system position callback
+    if (this.oceanSystemVisible) {
+      this.currentLines.forEach((line, idx) => {
+        line.rotation.z += delta * (0.15 + idx * 0.05);
+      });
+      this.callbacks.onOceanSystemUpdate?.(this.getOceanPositions());
     }
     this.controls.update(delta);
     this.updateCallout();

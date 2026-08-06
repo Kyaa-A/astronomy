@@ -5,7 +5,7 @@ import { CircleDotDashed, Cloud, Gauge, Globe2, Layers3, Lock, Minus, Orbit, Plu
   Rotate3D, Sparkles, Tags, Telescope, Unlock, X, ZoomIn,
 } from "lucide-react";
 import type { CelestialHotspot, CelestialObject } from "../lib/celestial-data";
-import type { AtmospherePosition, CelestialViewer as ViewerInstance, ContinentPosition, LabelPosition, LayerPosition, OrbitPlanetPosition } from "../lib/three/celestial-viewer";
+import type { AtmospherePosition, CelestialViewer as ViewerInstance, ContinentPosition, LabelPosition, LayerPosition, OceanPosition, OrbitPlanetPosition } from "../lib/three/celestial-viewer";
 
 type Props = {
   object: CelestialObject;
@@ -41,6 +41,9 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
   const [orbitPlanetPositions, setOrbitPlanetPositions] = useState<OrbitPlanetPosition[]>([]);
   const [atmospherePositions, setAtmospherePositions] = useState<AtmospherePosition[]>([]);
   const [continentPositions, setContinentPositions] = useState<ContinentPosition[]>([]);
+  const [oceanSystem, setOceanSystem] = useState(false);
+  const [oceanPositions, setOceanPositions] = useState<OceanPosition[]>([]);
+  const [selectedOcean, setSelectedOcean] = useState<OceanPosition | null>(null);
   const statusTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => { objectRef.current = object; }, [object]);
@@ -65,21 +68,32 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
               setAtmosphere(true);
               setContinents(false);
               setLayers(false);
+              setOceanSystem(false);
             } else if (hotspot?.id === "continents") {
               setContinents(true);
               setAtmosphere(false);
               setLayers(false);
+              setOceanSystem(false);
             } else if (hotspot?.id === "core") {
               setLayers(true);
               setAtmosphere(false);
               setContinents(false);
+              setOceanSystem(false);
+            } else if (hotspot?.id === "oceans") {
+              setOceanSystem(true);
+              setAtmosphere(false);
+              setContinents(false);
+              setLayers(false);
+              viewer?.setOceanSystem(true);
             } else if (!hotspot) {
               setAtmosphere(false);
               setContinents(false);
               setLayers(false);
+              setOceanSystem(false);
               viewer?.setLayers(false);
               viewer?.setAtmosphere(false);
               viewer?.setContinents(false);
+              viewer?.setOceanSystem(false);
             }
           },
           onReady: setReady,
@@ -90,6 +104,7 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
           onOrbitPlanetsUpdate: setOrbitPlanetPositions,
           onAtmosphereUpdate: setAtmospherePositions,
           onContinentsUpdate: setContinentPositions,
+          onOceanSystemUpdate: setOceanPositions,
         });
         viewerRef.current = viewer;
         viewer.setAutoRotate(autoRotateRef.current);
@@ -374,6 +389,48 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Floating 3D ocean system basin & landmark tags */}
+      {oceanSystem && oceanPositions.length > 0 && (
+        <div className="label-overlay">
+          {oceanPositions.map((op) => (
+            !op.behind && (
+              <div
+                key={op.id}
+                className={`ocean-marker-tag ${op.type} ${selectedOcean?.id === op.id ? "selected" : ""}`}
+                style={{
+                  left: `${op.x}px`,
+                  top: `${op.y}px`,
+                  transform: `translate(-50%, -100%) scale(${op.scale})`,
+                  "--tag-color": op.color,
+                } as React.CSSProperties}
+                onClick={() => setSelectedOcean(op)}
+              >
+                <i className="ocean-dot" />
+                <span>
+                  <b>{op.name}</b>
+                  <small>{op.type === "basin" ? "Ocean Basin" : (op.detail ?? "Landmark")}</small>
+                </span>
+              </div>
+            )
+          ))}
+        </div>
+      )}
+
+      {/* Selected Ocean basin/landmark detail card */}
+      {oceanSystem && selectedOcean && (
+        <div className="ocean-card-popover" style={{ "--tag-color": selectedOcean.color } as React.CSSProperties}>
+          <button className="ocean-card-close" onClick={() => setSelectedOcean(null)} aria-label="Close ocean info">×</button>
+          <div className="ocean-card-badge">{selectedOcean.type === "basin" ? "Major Ocean Basin" : "Deep Sea Feature"}</div>
+          <h3>{selectedOcean.name}</h3>
+          <div className="ocean-card-stats">
+            {selectedOcean.areaKm2 && <div><small>Surface Area</small><b>{selectedOcean.areaKm2}</b></div>}
+            {selectedOcean.avgDepthM && <div><small>Average Depth</small><b>{selectedOcean.avgDepthM}</b></div>}
+            {selectedOcean.deepestPoint && <div><small>Deepest Point</small><b>{selectedOcean.deepestPoint}</b></div>}
+          </div>
+          <p className="ocean-card-role"><strong>Climate Role:</strong> {selectedOcean.climateRole}</p>
         </div>
       )}
 
