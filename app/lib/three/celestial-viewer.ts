@@ -733,8 +733,8 @@ export class CelestialViewer {
     return this.atmosphereMeshes.map((mesh) => {
       const data = mesh.userData as { id: string; name: string; labelRadius: number; range: string; temp: string; feature: string; color: number };
       const r = data.labelRadius;
-      const worldPos = new THREE.Vector3(0, r, 0);
-      this.atmosphereGroup.localToWorld(worldPos);
+      const bodyCenter = this.body.getWorldPosition(new THREE.Vector3());
+      const worldPos = new THREE.Vector3(bodyCenter.x, bodyCenter.y + r, bodyCenter.z);
       const projected = worldPos.project(this.camera);
       return {
         id: data.id,

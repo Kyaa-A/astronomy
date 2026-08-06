@@ -137,7 +137,7 @@ button:disabled { cursor: not-allowed; opacity: 0.68; }
 .orbit-planet-tag.current b { color: var(--cyan); }
 
 /* Floating 3D atmosphere shell tags (Pure text inside layer band) */
-.atmosphere-shell-tag { position: absolute; left: 0; top: 0; pointer-events: none; font-size: 13px; font-weight: 800; font-family: var(--font-sans), sans-serif; text-transform: uppercase; letter-spacing: .2em; white-space: nowrap; color: #ffffff; text-shadow: 0 0 6px #000, 0 0 16px currentColor, 0 0 28px currentColor; transform: translate(-50%, -50%); opacity: .98; }
+.atmosphere-shell-tag { position: absolute; left: 0; top: 0; pointer-events: none; font-size: 13px; font-weight: 800; font-family: var(--font-sans), sans-serif; text-transform: uppercase; letter-spacing: .2em; text-align: center; justify-content: center; width: max-content; white-space: nowrap; color: #ffffff; text-shadow: 0 0 6px #000, 0 0 16px currentColor, 0 0 28px currentColor; transform: translate(-50%, -50%); opacity: .98; }
 
 /* Status Toast */
 .viewer-status { position: absolute; z-index: 16; bottom: 48px; left: 50%; transform: translateX(-50%); background: rgba(12,17,40,.92); border: 1px solid rgba(112,220,255,.4); border-radius: 20px; padding: 6px 14px; font-size: 11px; color: var(--cyan); backdrop-filter: blur(14px); box-shadow: 0 8px 24px rgba(0,0,0,.5), 0 0 16px rgba(112,220,255,.15); pointer-events: none; animation: toast-in .22s cubic-bezier(0.16, 1, 0.3, 1); white-space: nowrap; }
