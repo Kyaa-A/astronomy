@@ -738,10 +738,12 @@ export class CelestialViewer {
       this.autoRotate = false;
       this.controls.enableRotate = true;
       const target = new THREE.Vector3(0, 0, 0);
-      const cam = new THREE.Vector3(-2.8, 1.8, 6.2);
+      const cam = new THREE.Vector3(0, 0, 7.2);
       this.tweenCamera(cam, target);
-      this.body.rotation.y = THREE.MathUtils.degToRad(-35);
-      this.layerGroup.rotation.y = THREE.MathUtils.degToRad(-35);
+      this.body.rotation.x = 0;
+      this.body.rotation.y = 0;
+      this.layerGroup.rotation.x = 0;
+      this.layerGroup.rotation.y = 0;
     } else {
       this.controls.enableRotate = true;
       this.tweenCamera(HOME_CAMERA.clone(), HOME_TARGET.clone());
@@ -809,16 +811,16 @@ export class CelestialViewer {
     const distance = this.camera.position.distanceTo(this.controls.target);
     const scale = THREE.MathUtils.clamp(7.5 / distance, 0.65, 2.0);
 
-    // Positions placed directly inside each exposed cutaway section
+    // Top-to-bottom positions landing accurately over each layer ring on the exposed cutaway face
     const labelOffsets = [
-      new THREE.Vector3(1.35, 1.10, 0.80), // Crust & Surface
-      new THREE.Vector3(0.95, 0.60, 0.65), // Mantle
-      new THREE.Vector3(0.58, 0.18, 0.42), // Liquid Outer Core
-      new THREE.Vector3(0.10, -0.22, 0.12), // Solid Inner Core
+      new THREE.Vector3(1.10, 1.65, 0.0), // Crust & Surface
+      new THREE.Vector3(0.78, 1.05, 0.0), // Convecting Mantle
+      new THREE.Vector3(0.48, 0.48, 0.0), // Liquid Outer Core
+      new THREE.Vector3(0.18, -0.12, 0.0), // Solid Inner Core
     ];
 
     return this.layerMeshes.map((mesh, index) => {
-      const offset = labelOffsets[index] ?? new THREE.Vector3(0.5, 0.5, 0.5);
+      const offset = labelOffsets[index] ?? new THREE.Vector3(0.5, 0.5, 0.0);
       const localPos = offset.clone();
       localPos.applyEuler(this.layerGroup.rotation);
       const worldPos = this.body.getWorldPosition(new THREE.Vector3()).add(localPos);
