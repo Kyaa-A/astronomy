@@ -895,6 +895,14 @@ export class CelestialViewer {
     this.magnetosphereGroup.visible = enabled;
     if (enabled) {
       this.autoRotate = true;
+      this.controls.enableRotate = true;
+      this.controls.maxDistance = 18;
+      const target = new THREE.Vector3(0, 0, 0);
+      const cam = new THREE.Vector3(0, 0.4, 11.8);
+      this.tweenCamera(cam, target);
+    } else {
+      this.controls.maxDistance = 13;
+      this.tweenCamera(HOME_CAMERA.clone(), HOME_TARGET.clone());
     }
     this.applyModes();
   }
