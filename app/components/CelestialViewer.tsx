@@ -57,7 +57,12 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
       if (cancelled || !mountRef.current) return;
       try {
         viewer = new Viewer(mountRef.current, {
-          onSelect: setSelected,
+          onSelect: (hotspot) => {
+            setSelected(hotspot);
+            if (hotspot?.id === "atmosphere") {
+              setAtmosphere(true);
+            }
+          },
           onReady: setReady,
           onWebGLError: () => setWebglError(true),
           onZoomChange: setZoomLevel,
@@ -87,7 +92,7 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
   useEffect(() => viewerRef.current?.setAutoRotate(autoRotate), [autoRotate]);
   useEffect(() => viewerRef.current?.setOrbit(orbiting), [orbiting]);
 
-  const calloutRef = useCallback((node: HTMLDivElement | null) => viewerRef.current?.attachCallout(node), []);
+
 
   const toggleLabels = () => {
     const next = !labels;
@@ -283,21 +288,21 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
         </div>
       )}
 
-      <aside className="viewer-tip" aria-label="Viewer instructions">
-        <span><Sparkles size={14} />Navigation</span>
-        <p>Drag to rotate<br />Scroll or pinch to zoom<br />Select a marker to learn</p>
-      </aside>
-
-      {selected && (
-        <div className="hotspot-callout" ref={calloutRef}>
-          <div style={{ "--marker": selected.color } as React.CSSProperties}>
+      <aside className={`viewer-tip ${selected ? "active-feature" : ""}`} aria-label={selected ? `${selected.label} details` : "Viewer instructions"}>
+        {selected ? (
+          <div className="top-right-callout" style={{ "--marker": selected.color } as React.CSSProperties}>
             <button type="button" className="callout-close-btn" onClick={() => viewerRef.current?.clearSelection()} aria-label="Close feature details"><X size={13} /></button>
             <small>Surface feature · {selected.latitude}°N {selected.longitude}°E</small>
             <b>{selected.label}</b>
             <p>{selected.detail}</p>
           </div>
-        </div>
-      )}
+        ) : (
+          <>
+            <span><Sparkles size={14} />Navigation</span>
+            <p>Drag to rotate<br />Scroll or pinch to zoom<br />Select a marker to learn</p>
+          </>
+        )}
+      </aside>
 
       <ul className="sr-only">
         {object.hotspots.map((hotspot) => <li key={hotspot.id}>{hotspot.label}: {hotspot.detail}</li>)}
