@@ -77,6 +77,9 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
               setAtmosphere(false);
               setContinents(false);
               setLayers(false);
+              viewer?.setLayers(false);
+              viewer?.setAtmosphere(false);
+              viewer?.setContinents(false);
             }
           },
           onReady: setReady,
