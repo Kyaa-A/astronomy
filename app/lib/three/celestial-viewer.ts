@@ -53,6 +53,9 @@ export type AtmospherePosition = {
   color: string;
   x: number;
   y: number;
+  scale: number;
+  arcRadius: number;
+  arcOffset: number;
 };
 
 const ATMOSPHERE_LAYERS_3D = [
@@ -730,12 +733,24 @@ export class CelestialViewer {
     if (!this.atmosphereVisible) return [];
     const w = this.container.clientWidth;
     const h = this.container.clientHeight;
+    const distance = this.camera.position.distanceTo(this.controls.target);
+    const scale = THREE.MathUtils.clamp(7.5 / distance, 0.65, 2.0);
+
+    const ARC_PARAMS: Record<string, { arcRadius: number; arcOffset: number }> = {
+      troposphere: { arcRadius: 360, arcOffset: 22 },
+      stratosphere: { arcRadius: 410, arcOffset: 25 },
+      mesosphere: { arcRadius: 470, arcOffset: 28 },
+      thermosphere: { arcRadius: 530, arcOffset: 31 },
+      exosphere: { arcRadius: 600, arcOffset: 34 },
+    };
+
     return this.atmosphereMeshes.map((mesh) => {
       const data = mesh.userData as { id: string; name: string; labelRadius: number; range: string; temp: string; feature: string; color: number };
       const r = data.labelRadius;
       const bodyCenter = this.body.getWorldPosition(new THREE.Vector3());
       const worldPos = new THREE.Vector3(bodyCenter.x, bodyCenter.y + r, bodyCenter.z);
       const projected = worldPos.project(this.camera);
+      const arc = ARC_PARAMS[data.id] ?? { arcRadius: 450, arcOffset: 28 };
       return {
         id: data.id,
         name: data.name,
@@ -745,6 +760,9 @@ export class CelestialViewer {
         color: `#${data.color.toString(16).padStart(6, "0")}`,
         x: (projected.x * 0.5 + 0.5) * w,
         y: (-projected.y * 0.5 + 0.5) * h,
+        scale,
+        arcRadius: arc.arcRadius,
+        arcOffset: arc.arcOffset,
       };
     });
   }
