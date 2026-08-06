@@ -39,7 +39,11 @@ export type CelestialObject = {
     diameter: string;
     mass: string;
     distance: string;
+    avgDistance?: string;
     orbitalPeriod: string;
+    orbitalSpeed?: string;
+    eccentricity?: string;
+    orderFromSun?: string;
     dayLength: string;
     moons: string;
     gravity: string;
@@ -91,7 +95,27 @@ const fact = (
   gravity: string,
   temperature: string,
   composition: string,
-) => ({ diameter, mass, distance, orbitalPeriod, dayLength, moons, gravity, temperature, composition });
+  extra: {
+    avgDistance?: string;
+    orbitalSpeed?: string;
+    eccentricity?: string;
+    orderFromSun?: string;
+  } = {},
+) => ({
+  diameter,
+  mass,
+  distance,
+  avgDistance: extra.avgDistance ?? distance,
+  orbitalPeriod,
+  orbitalSpeed: extra.orbitalSpeed,
+  eccentricity: extra.eccentricity,
+  orderFromSun: extra.orderFromSun,
+  dayLength,
+  moons,
+  gravity,
+  temperature,
+  composition,
+});
 
 const surfaceTexture = (
   id: CelestialId,
@@ -130,7 +154,7 @@ export const celestialObjects: CelestialObject[] = [
     texture: surfaceTexture("mercury"),
     subtitle: "The Swiftest World", description: "A cratered, metal-rich planet racing through the Sun's intense inner realm.",
     diameterKm: 4_879, massKg: 3.301e23, gravity: 3.7, temperatureC: 167, moons: 0,
-    facts: fact("4,879 km", "3.301 × 10²³ kg", "57.9 million km", "88 Earth days", "58.6 Earth days", "0", "3.70 m/s²", "~167°C average", "Silicate crust over a large iron core"),
+    facts: fact("4,879 km", "3.301 × 10²³ kg", "57.9 million km", "88 Earth days", "58.6 Earth days", "0", "3.70 m/s²", "~167°C average", "Silicate crust over a large iron core", { avgDistance: "57.9 million km (0.39 AU)", orbitalSpeed: "47.36 km/s", eccentricity: "0.2056", orderFromSun: "1st from Sun" }),
     significance: "Its oversized core preserves evidence of violent conditions during the formation of the inner planets.",
     didYouKnow: "A solar day on Mercury lasts about 176 Earth days—twice its year.",
     accent: "#b8c0c9", secondary: "#e5e8eb", visual: { base: "#817f7d", light: "#d5d0c8", dark: "#373a3d", tilt: 0.03, roughness: 1, spots: 35 },
@@ -147,7 +171,7 @@ export const celestialObjects: CelestialObject[] = [
     texture: surfaceTexture("venus", { atmosphere: "/celestial/textures/venus-atmosphere.webp" }),
     subtitle: "The Veiled Furnace", description: "A world wrapped in brilliant clouds and a crushing greenhouse atmosphere.",
     diameterKm: 12_104, massKg: 4.867e24, gravity: 8.87, temperatureC: 464, moons: 0,
-    facts: fact("12,104 km", "4.867 × 10²⁴ kg", "108.2 million km", "224.7 Earth days", "243 Earth days", "0", "8.87 m/s²", "~464°C", "Rocky world beneath carbon-dioxide clouds"),
+    facts: fact("12,104 km", "4.867 × 10²⁴ kg", "108.2 million km", "224.7 Earth days", "243 Earth days", "0", "8.87 m/s²", "~464°C", "Rocky world beneath carbon-dioxide clouds", { avgDistance: "108.2 million km (0.72 AU)", orbitalSpeed: "35.02 km/s", eccentricity: "0.0067", orderFromSun: "2nd from Sun" }),
     significance: "Venus is a natural laboratory for understanding runaway greenhouse warming and terrestrial planet evolution.",
     didYouKnow: "Venus rotates backward compared with most planets, and its day is longer than its year.",
     accent: "#f0b96b", secondary: "#ffe5ad", visual: { base: "#bd6c2c", light: "#f8d997", dark: "#713115", atmosphere: "#d9903d", tilt: 177.4, roughness: 0.72, banding: 14 },
@@ -164,7 +188,7 @@ export const celestialObjects: CelestialObject[] = [
     texture: surfaceTexture("earth", { clouds: "/celestial/textures/earth-clouds.webp", normal: "/celestial/textures/earth-normal.webp", emissive: "/celestial/textures/earth-night.webp" }),
     subtitle: "Our Ocean World", description: "The third planet from the Sun and the only known world to support life.",
     diameterKm: 12_742, massKg: 5.972e24, gravity: 9.81, temperatureC: 15, moons: 1,
-    facts: fact("12,742 km", "5.972 × 10²⁴ kg", "149.6 million km", "365.25 days", "23 hours 56 minutes", "1", "9.81 m/s²", "~15°C average", "Rocky planet with an iron-rich core"),
+    facts: fact("12,742 km", "5.972 × 10²⁴ kg", "149.6 million km", "365.25 days", "23 hours 56 minutes", "1", "9.81 m/s²", "~15°C average", "Rocky planet with an iron-rich core", { avgDistance: "149.6 million km (1.00 AU)", orbitalSpeed: "29.78 km/s", eccentricity: "0.0167", orderFromSun: "3rd from Sun" }),
     significance: "Earth's liquid oceans, active geology, protective magnetic field, and stable atmosphere create the only confirmed biosphere.",
     didYouKnow: "About 71% of Earth's surface is covered by ocean, yet most of it remains unexplored.",
     accent: "#64d8ff", secondary: "#9ee7c2", visual: { base: "#1266a8", light: "#62c6ef", dark: "#092e5b", atmosphere: "#4cb8ff", tilt: 23.44, roughness: 0.78, spots: 20 },
@@ -183,7 +207,7 @@ export const celestialObjects: CelestialObject[] = [
     texture: surfaceTexture("mars"),
     subtitle: "The Rusted Frontier", description: "A cold desert world marked by ancient rivers, giant volcanoes, and polar ice.",
     diameterKm: 6_779, massKg: 6.417e23, gravity: 3.71, temperatureC: -63, moons: 2,
-    facts: fact("6,779 km", "6.417 × 10²³ kg", "227.9 million km", "687 Earth days", "24 hours 37 minutes", "2", "3.71 m/s²", "~-63°C average", "Iron-rich basaltic rock and a metal core"),
+    facts: fact("6,779 km", "6.417 × 10²³ kg", "227.9 million km", "687 Earth days", "24 hours 37 minutes", "2", "3.71 m/s²", "~-63°C average", "Iron-rich basaltic rock and a metal core", { avgDistance: "227.9 million km (1.52 AU)", orbitalSpeed: "24.07 km/s", eccentricity: "0.0934", orderFromSun: "4th from Sun" }),
     significance: "Mars preserves accessible evidence of a warmer, wetter past and is the leading target in the search for ancient extraterrestrial life.",
     didYouKnow: "Olympus Mons rises about 22 km, making it the tallest known volcano in the Solar System.",
     accent: "#f07b5d", secondary: "#ffc09c", visual: { base: "#a93f26", light: "#e99062", dark: "#4e1e18", atmosphere: "#db7a54", tilt: 25.19, roughness: 0.96, spots: 32 },
@@ -200,7 +224,7 @@ export const celestialObjects: CelestialObject[] = [
     texture: surfaceTexture("jupiter"),
     subtitle: "The Giant of Storms", description: "The largest planet, wrapped in turbulent cloud bands and immense magnetic fields.",
     diameterKm: 139_820, massKg: 1.898e27, gravity: 24.79, temperatureC: -110, moons: 95,
-    facts: fact("139,820 km", "1.898 × 10²⁷ kg", "778.5 million km", "11.86 Earth years", "9 hours 56 minutes", "95 confirmed", "24.79 m/s²", "~-110°C at cloud tops", "Hydrogen and helium around a dense interior"),
+    facts: fact("139,820 km", "1.898 × 10²⁷ kg", "778.5 million km", "11.86 Earth years", "9 hours 56 minutes", "95 confirmed", "24.79 m/s²", "~-110°C at cloud tops", "Hydrogen and helium around a dense interior", { avgDistance: "778.5 million km (5.20 AU)", orbitalSpeed: "13.07 km/s", eccentricity: "0.0489", orderFromSun: "5th from Sun" }),
     significance: "Its gravity shaped the architecture of the Solar System, while its moons host some of the most promising environments beyond Earth.",
     didYouKnow: "The Great Red Spot is a storm wider than Earth that has persisted for centuries.",
     accent: "#e7ae83", secondary: "#fff0d4", visual: { base: "#a76d4e", light: "#ead1aa", dark: "#5c3329", atmosphere: "#d49d72", tilt: 3.13, roughness: 0.62, banding: 22, spots: 5 },
@@ -217,7 +241,7 @@ export const celestialObjects: CelestialObject[] = [
     texture: surfaceTexture("saturn", { rings: "/celestial/textures/saturn-rings.webp" }),
     subtitle: "The Ringed World", description: "A low-density giant encircled by an intricate system of ice and rock.",
     diameterKm: 116_460, massKg: 5.683e26, gravity: 10.44, temperatureC: -140, moons: 146,
-    facts: fact("116,460 km", "5.683 × 10²⁶ kg", "1.434 billion km", "29.45 Earth years", "10 hours 42 minutes", "146 confirmed", "10.44 m/s²", "~-140°C at cloud tops", "Hydrogen and helium with an icy-rocky core"),
+    facts: fact("116,460 km", "5.683 × 10²⁶ kg", "1.434 billion km", "29.45 Earth years", "10 hours 42 minutes", "146 confirmed", "10.44 m/s²", "~-140°C at cloud tops", "Hydrogen and helium with an icy-rocky core", { avgDistance: "1.434 billion km (9.58 AU)", orbitalSpeed: "9.68 km/s", eccentricity: "0.0565", orderFromSun: "6th from Sun" }),
     significance: "Saturn's rings reveal disk dynamics in exquisite detail, while moons such as Enceladus and Titan are major astrobiology targets.",
     didYouKnow: "Saturn's average density is lower than water, though no ocean could hold it.",
     accent: "#e9cf8d", secondary: "#fff4c9", visual: { base: "#b79b64", light: "#f2dfaa", dark: "#655438", atmosphere: "#cfb67d", rings: ["#d8c394", "#887963"], tilt: 26.73, roughness: 0.64, banding: 18 },
@@ -234,7 +258,7 @@ export const celestialObjects: CelestialObject[] = [
     texture: surfaceTexture("uranus"),
     subtitle: "The Sideways Ice Giant", description: "A pale cyan world rotating nearly on its side through the outer system.",
     diameterKm: 50_724, massKg: 8.681e25, gravity: 8.69, temperatureC: -195, moons: 28,
-    facts: fact("50,724 km", "8.681 × 10²⁵ kg", "2.871 billion km", "84 Earth years", "17 hours 14 minutes", "28 confirmed", "8.69 m/s²", "~-195°C", "Hydrogen-helium atmosphere over icy fluids and rock"),
+    facts: fact("50,724 km", "8.681 × 10²⁵ kg", "2.871 billion km", "84 Earth years", "17 hours 14 minutes", "28 confirmed", "8.69 m/s²", "~-195°C", "Hydrogen-helium atmosphere over icy fluids and rock", { avgDistance: "2.871 billion km (19.22 AU)", orbitalSpeed: "6.80 km/s", eccentricity: "0.0463", orderFromSun: "7th from Sun" }),
     significance: "Its extreme tilt and unusual magnetic field test theories of giant-planet formation and catastrophic early collisions.",
     didYouKnow: "Each pole experiences roughly 42 years of continuous sunlight followed by 42 years of darkness.",
     accent: "#86e6eb", secondary: "#c9fbff", visual: { base: "#58aeb8", light: "#a8edf0", dark: "#275b6a", atmosphere: "#68d6df", rings: ["#96bec5", "#476b72"], tilt: 97.77, roughness: 0.56, banding: 6 },
@@ -251,7 +275,7 @@ export const celestialObjects: CelestialObject[] = [
     texture: surfaceTexture("neptune"),
     subtitle: "The Wind-Swept Blue", description: "A distant cobalt world with the fastest measured winds in the Solar System.",
     diameterKm: 49_244, massKg: 1.024e26, gravity: 11.15, temperatureC: -200, moons: 16,
-    facts: fact("49,244 km", "1.024 × 10²⁶ kg", "4.495 billion km", "164.8 Earth years", "16 hours 6 minutes", "16 confirmed", "11.15 m/s²", "~-200°C", "Icy mantle beneath hydrogen, helium, and methane"),
+    facts: fact("49,244 km", "1.024 × 10²⁶ kg", "4.495 billion km", "164.8 Earth years", "16 hours 6 minutes", "16 confirmed", "11.15 m/s²", "~-200°C", "Icy mantle beneath hydrogen, helium, and methane", { avgDistance: "4.495 billion km (30.05 AU)", orbitalSpeed: "5.43 km/s", eccentricity: "0.0095", orderFromSun: "8th from Sun" }),
     significance: "Neptune reveals how internal heat can power extreme weather far from strong sunlight.",
     didYouKnow: "Its winds can exceed 2,000 km/h—faster than the speed of sound on Earth.",
     accent: "#557dff", secondary: "#98bcff", visual: { base: "#234cbb", light: "#4d86ed", dark: "#0b1d66", atmosphere: "#336dff", tilt: 28.32, roughness: 0.54, banding: 11, spots: 4 },

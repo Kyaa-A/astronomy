@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CircleDotDashed, Cloud, Gauge, Globe2, Layers3, Lock, Minus, Orbit, Plus, RefreshCcw,
+import { CircleDotDashed, Cloud, Gauge, Globe2, Layers3, Lock, Minus, Orbit, Plus, RefreshCcw, RotateCcw,
   Rotate3D, Sparkles, Tags, Telescope, Unlock, X, ZoomIn,
 } from "lucide-react";
 import type { CelestialHotspot, CelestialObject } from "../lib/celestial-data";
@@ -16,9 +16,11 @@ type Props = {
   orbiting: boolean;
   onOrbiting: (enabled: boolean) => void;
   onResetState?: () => void;
+  onSelectPlanet?: (id: string) => void;
+  onExplorePlanet?: (id: string) => void;
 };
 
-export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, onCompare, orbiting, onOrbiting, onResetState }: Props) {
+export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, onCompare, orbiting, onOrbiting, onResetState, onSelectPlanet, onExplorePlanet }: Props) {
   const mountRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<ViewerInstance | null>(null);
   const objectRef = useRef(object);
@@ -353,15 +355,62 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
         </div>
       )}
 
-      {/* Floating orbit planet tags */}
+      {/* Floating 3D Orbit Planet Tags (Collision-avoided & interactive) */}
       {orbiting && orbitPlanetPositions.length > 0 && (
-        <div className="label-overlay" aria-hidden="true">
-          {orbitPlanetPositions.map((op) => (
-            <div key={op.id} className={`orbit-planet-tag ${op.isCurrent ? "current" : ""}`} style={{ transform: `translate3d(${op.x}px, ${op.y}px, 0)`, "--planet-color": op.color } as React.CSSProperties}>
-              <i />
-              <span><b>{op.name}</b><small>{op.dist} · {op.rank}</small></span>
-            </div>
-          ))}
+        <div className="label-overlay">
+          {orbitPlanetPositions.map((op) => {
+            const hideSecondary = op.zoomLevel > 11.5 && op.isInnerPlanet && !op.isCurrent;
+            return (
+              <div
+                key={op.id}
+                className={`orbit-planet-tag ${op.isCurrent ? "current" : ""} ${hideSecondary ? "compact" : ""}`}
+                style={{
+                  left: `${op.x}px`,
+                  top: `${op.y}px`,
+                  transform: `translate3d(${op.offsetX}px, ${op.offsetY}px, 0)`,
+                  "--planet-color": op.color,
+                } as React.CSSProperties}
+                onMouseEnter={() => viewerRef.current?.setHoveredOrbitPlanet(op.id)}
+                onMouseLeave={() => viewerRef.current?.setHoveredOrbitPlanet(null)}
+                onClick={() => {
+                  viewerRef.current?.selectOrbitPlanet(op.id);
+                  onSelectPlanet?.(op.id);
+                }}
+                onDoubleClick={() => {
+                  onExplorePlanet?.(op.id);
+                }}
+              >
+                <i className="orbit-tag-dot" />
+                <span>
+                  <b>{op.name}</b>
+                  {!hideSecondary && <small>{op.dist}</small>}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Orbit Controls Toolbar & Schematic Disclaimer */}
+      {orbiting && (
+        <div className="orbit-controls-bar">
+          <button
+            type="button"
+            className="orbit-btn"
+            onClick={() => viewerRef.current?.resetOrbitView()}
+            title="Return to full solar system composition"
+          >
+            <RotateCcw size={13} /> Reset view
+          </button>
+          <button
+            type="button"
+            className="orbit-btn"
+            onClick={() => viewerRef.current?.focusInnerPlanets()}
+            title="Focus terrestrial planets Mercury through Mars"
+          >
+            <ZoomIn size={13} /> Focus inner planets
+          </button>
+          <span className="schematic-note">Schematic view — sizes and distances not to scale</span>
         </div>
       )}
 

@@ -23,17 +23,16 @@ type ViewerCallbacks = {
 const HOME_CAMERA = new THREE.Vector3(0, 0.3, 9.4);
 const HOME_TARGET = new THREE.Vector3(0, 0, 0);
 const PLANET_RADIUS = 2;
-const ORBIT_CAMERA = new THREE.Vector3(0, 26.5, 34.5);
 
-const PLANET_ORBITS = [
-  { id: "mercury", radiusX: 3.2, radiusZ: 2.0, speed: 2.2, size: 0.16, color: "#b8c0c9", name: "Mercury", dist: "57.9M km", rank: "1st (Nearest)" },
-  { id: "venus", radiusX: 5.0, radiusZ: 3.1, speed: 1.6, size: 0.24, color: "#f0b96b", name: "Venus", dist: "108.2M km", rank: "2nd" },
-  { id: "earth", radiusX: 7.0, radiusZ: 4.3, speed: 1.2, size: 0.26, color: "#64d8ff", name: "Earth", dist: "149.6M km", rank: "3rd" },
-  { id: "mars", radiusX: 9.2, radiusZ: 5.7, speed: 0.95, size: 0.20, color: "#f07b5d", name: "Mars", dist: "227.9M km", rank: "4th" },
-  { id: "jupiter", radiusX: 12.0, radiusZ: 7.4, speed: 0.55, size: 0.58, color: "#e7ae83", name: "Jupiter", dist: "778.5M km", rank: "5th" },
-  { id: "saturn", radiusX: 15.2, radiusZ: 9.4, speed: 0.40, size: 0.48, color: "#e9cf8d", name: "Saturn", dist: "1.43B km", rank: "6th" },
-  { id: "uranus", radiusX: 18.5, radiusZ: 11.4, speed: 0.28, size: 0.38, color: "#86e6eb", name: "Uranus", dist: "2.87B km", rank: "7th" },
-  { id: "neptune", radiusX: 22.0, radiusZ: 13.6, speed: 0.20, size: 0.36, color: "#557dff", name: "Neptune", dist: "4.50B km", rank: "8th (Farthest)" },
+export const PLANET_ORBITS = [
+  { id: "mercury", radiusX: 3.2, radiusZ: 2.0, speed: 2.2, size: 0.18, color: "#b8c0c9", name: "Mercury", dist: "57.9M km · 1st from Sun", rank: "1st" },
+  { id: "venus", radiusX: 5.0, radiusZ: 3.1, speed: 1.6, size: 0.24, color: "#f0b96b", name: "Venus", dist: "108.2M km · 2nd from Sun", rank: "2nd" },
+  { id: "earth", radiusX: 7.0, radiusZ: 4.3, speed: 1.2, size: 0.26, color: "#64d8ff", name: "Earth", dist: "149.6M km · 3rd from Sun", rank: "3rd" },
+  { id: "mars", radiusX: 9.2, radiusZ: 5.7, speed: 0.95, size: 0.20, color: "#f07b5d", name: "Mars", dist: "227.9M km · 4th from Sun", rank: "4th" },
+  { id: "jupiter", radiusX: 12.0, radiusZ: 7.4, speed: 0.55, size: 0.58, color: "#e7ae83", name: "Jupiter", dist: "778.5M km · 5th from Sun", rank: "5th" },
+  { id: "saturn", radiusX: 15.2, radiusZ: 9.4, speed: 0.40, size: 0.48, color: "#e9cf8d", name: "Saturn", dist: "1.43B km · 6th from Sun", rank: "6th" },
+  { id: "uranus", radiusX: 18.5, radiusZ: 11.4, speed: 0.28, size: 0.38, color: "#86e6eb", name: "Uranus", dist: "2.87B km · 7th from Sun", rank: "7th" },
+  { id: "neptune", radiusX: 22.0, radiusZ: 13.6, speed: 0.20, size: 0.36, color: "#557dff", name: "Neptune", dist: "4.50B km · 8th from Sun", rank: "8th" },
 ] as const;
 
 export type OrbitPlanetPosition = {
@@ -43,8 +42,12 @@ export type OrbitPlanetPosition = {
   rank: string;
   color: string;
   isCurrent: boolean;
+  isInnerPlanet: boolean;
   x: number;
   y: number;
+  offsetX: number;
+  offsetY: number;
+  zoomLevel: number;
 };
 
 export type AtmospherePosition = {
@@ -365,6 +368,10 @@ export class CelestialViewer {
   private layerAnimFrame = 0;
   private rotAnimFrame = 0;
   private orbitPlanetMeshes: Map<string, THREE.Mesh> = new Map();
+  private orbitLineMap: Map<string, THREE.LineLoop> = new Map();
+  private selectionRingMesh: THREE.Mesh | null = null;
+  private selectedOrbitPlanetId: string = "earth";
+  private hoveredOrbitPlanetId: string | null = null;
   private oceanGroup = new THREE.Group();
   private currentLines: THREE.LineLoop[] = [];
   private surfaceMesh: THREE.Mesh | null = null;
@@ -831,40 +838,108 @@ export class CelestialViewer {
 
   private createOrbitScene(object: CelestialObject) {
     this.orbitPlanetMeshes.clear();
-    // Central Sun
-    const sun = new THREE.Mesh(
-      new THREE.SphereGeometry(0.72, 32, 24),
-      new THREE.MeshBasicMaterial({ color: 0xffc15b }),
-    );
-    sun.name = "orbit-sun";
-    this.orbitGroup.add(sun);
+    this.orbitLineMap.clear();
+    this.orbitGroup.clear();
 
-    // Orbit rings and planet nodes for all solar system planets
+    this.selectedOrbitPlanetId = object.id === "sun" ? "earth" : object.id === "moon" ? "earth" : object.id;
+
+    // 1. Directional Sun Point Light & Central Sun Mesh
+    const sunLight = new THREE.PointLight(0xfffaea, 3.8, 45);
+    sunLight.position.set(0, 0, 0);
+    this.orbitGroup.add(sunLight);
+
+    const sunGeom = new THREE.SphereGeometry(0.72, 32, 24);
+    const sunMat = new THREE.MeshBasicMaterial({ color: 0xffc15b });
+    const sunMesh = new THREE.Mesh(sunGeom, sunMat);
+    sunMesh.name = "orbit-sun";
+    this.orbitGroup.add(sunMesh);
+
+    // Subtle Sun Corona Glow Ring
+    const coronaGeom = new THREE.RingGeometry(0.76, 1.25, 32);
+    const coronaMat = new THREE.MeshBasicMaterial({
+      color: 0xffaa33,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.35,
+      blending: THREE.AdditiveBlending,
+    });
+    const coronaMesh = new THREE.Mesh(coronaGeom, coronaMat);
+    coronaMesh.rotation.x = Math.PI * 0.5;
+    this.orbitGroup.add(coronaMesh);
+
+    // 2. Elliptical Orbit Rings and Planet Nodes for all 8 planets
     PLANET_ORBITS.forEach((p) => {
-      const isCurrent = p.id === object.id || (object.id === "sun" && p.id === "earth") || (object.id === "moon" && p.id === "earth");
+      const isSelected = p.id === this.selectedOrbitPlanetId;
       const curve = new THREE.EllipseCurve(0, 0, p.radiusX, p.radiusZ, 0, Math.PI * 2);
       const points = curve.getPoints(160).map((pt) => new THREE.Vector3(pt.x, 0, pt.y));
       const orbitLine = new THREE.LineLoop(
         new THREE.BufferGeometry().setFromPoints(points),
         new THREE.LineBasicMaterial({
-          color: isCurrent ? 0x70dcff : new THREE.Color(p.color),
+          color: isSelected ? 0x70dcff : new THREE.Color(p.color),
           transparent: true,
-          opacity: isCurrent ? 0.75 : 0.28,
-          linewidth: isCurrent ? 2 : 1,
+          opacity: isSelected ? 0.95 : 0.28,
+          linewidth: isSelected ? 2 : 1,
         }),
       );
       this.orbitGroup.add(orbitLine);
+      this.orbitLineMap.set(p.id, orbitLine);
 
+      // Planet sphere with directional shading
       const pMesh = new THREE.Mesh(
         new THREE.SphereGeometry(p.size, 24, 18),
-        new THREE.MeshBasicMaterial({ color: new THREE.Color(p.color) }),
+        new THREE.MeshStandardMaterial({
+          color: new THREE.Color(p.color),
+          roughness: 0.6,
+          metalness: 0.05,
+        }),
       );
-      pMesh.userData = { id: p.id, name: p.name, dist: p.dist, rank: p.rank, color: p.color, radiusX: p.radiusX, radiusZ: p.radiusZ, speed: p.speed, isCurrent };
+      pMesh.userData = { id: p.id, name: p.name, dist: p.dist, rank: p.rank, color: p.color, radiusX: p.radiusX, radiusZ: p.radiusZ, speed: p.speed, isCurrent: isSelected, size: p.size };
       this.orbitGroup.add(pMesh);
       this.orbitPlanetMeshes.set(p.id, pMesh);
     });
 
+    // 3. Selection Ring Mesh around active planet
+    const selRingGeom = new THREE.RingGeometry(0.38, 0.54, 32);
+    const selRingMat = new THREE.MeshBasicMaterial({
+      color: 0x70dcff,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.9,
+    });
+    this.selectionRingMesh = new THREE.Mesh(selRingGeom, selRingMat);
+    this.selectionRingMesh.rotation.x = Math.PI * 0.5;
+    this.orbitGroup.add(this.selectionRingMesh);
+
     this.orbitGroup.rotation.x = Math.PI * 0.42;
+    this.updateOrbitHighlighting();
+  }
+
+  private updateOrbitHighlighting() {
+    PLANET_ORBITS.forEach((p) => {
+      const line = this.orbitLineMap.get(p.id);
+      if (!line) return;
+      const isSelected = p.id === this.selectedOrbitPlanetId;
+      const isHovered = p.id === this.hoveredOrbitPlanetId;
+
+      const mat = line.material as THREE.LineBasicMaterial;
+      if (isSelected) {
+        mat.color.setHex(0x70dcff);
+        mat.opacity = 0.95;
+      } else if (isHovered) {
+        mat.color.setHex(0x90e8ff);
+        mat.opacity = 0.75;
+      } else {
+        mat.color.set(p.color);
+        mat.opacity = 0.28; // Dimmed to 35-45%
+      }
+    });
+
+    const activeMesh = this.orbitPlanetMeshes.get(this.selectedOrbitPlanetId);
+    if (activeMesh && this.selectionRingMesh) {
+      this.selectionRingMesh.position.copy(activeMesh.position);
+      const size = (activeMesh.userData as { size: number }).size ?? 0.26;
+      this.selectionRingMesh.scale.setScalar(size * 4.2);
+    }
   }
 
   private applyModes() {
@@ -899,10 +974,15 @@ export class CelestialViewer {
   setOrbit(enabled: boolean) {
     this.orbiting = enabled;
     if (enabled) {
+      this.atmosphereVisible = false;
+      this.continentsVisible = false;
+      this.oceanSystemVisible = false;
+      this.magnetosphereVisible = false;
+      this.layersVisible = false;
       this.controls.maxDistance = 85;
       this.controls.minDistance = 2.5;
       this.applyModes();
-      this.tweenCamera(ORBIT_CAMERA, HOME_TARGET);
+      this.tweenCamera(new THREE.Vector3(0, 0.4, 13.5), HOME_TARGET);
     } else {
       this.controls.maxDistance = 13;
       this.controls.minDistance = 4.6;
@@ -911,6 +991,33 @@ export class CelestialViewer {
       const dist = this.container.clientWidth < 600 ? Math.max(11.35, ringDist) : ringDist;
       this.tweenCamera(new THREE.Vector3(HOME_CAMERA.x, HOME_CAMERA.y, dist), HOME_TARGET);
     }
+  }
+
+  selectOrbitPlanet(planetId: string) {
+    this.selectedOrbitPlanetId = planetId;
+    this.updateOrbitHighlighting();
+
+    const mesh = this.orbitPlanetMeshes.get(planetId);
+    if (mesh) {
+      const worldPos = mesh.getWorldPosition(new THREE.Vector3());
+      const camPos = new THREE.Vector3(worldPos.x * 0.65, 0.8, Math.max(8.5, worldPos.z * 0.65 + 6.0));
+      this.tweenCamera(camPos, new THREE.Vector3(worldPos.x * 0.35, 0, worldPos.z * 0.35));
+    }
+  }
+
+  setHoveredOrbitPlanet(planetId: string | null) {
+    this.hoveredOrbitPlanetId = planetId;
+    this.updateOrbitHighlighting();
+  }
+
+  focusInnerPlanets() {
+    if (!this.orbiting) return;
+    this.tweenCamera(new THREE.Vector3(0, 0.5, 6.2), HOME_TARGET);
+  }
+
+  resetOrbitView() {
+    if (!this.orbiting) return;
+    this.tweenCamera(new THREE.Vector3(0, 0.4, 13.5), HOME_TARGET);
   }
   setAtmosphere(enabled: boolean) {
     this.atmosphereVisible = enabled;
@@ -1078,22 +1185,70 @@ export class CelestialViewer {
     if (!this.orbiting) return [];
     const w = this.container.clientWidth;
     const h = this.container.clientHeight;
-    const results: OrbitPlanetPosition[] = [];
+    const distanceToTarget = this.camera.position.distanceTo(this.controls.target);
+    const zoomLevel = distanceToTarget;
+    const rawProjections: { id: string; name: string; dist: string; rank: string; color: string; isCurrent: boolean; isInnerPlanet: boolean; projX: number; projY: number }[] = [];
+
     this.orbitPlanetMeshes.forEach((mesh) => {
       const worldPos = mesh.getWorldPosition(new THREE.Vector3());
       const projected = worldPos.clone().project(this.camera);
       const data = mesh.userData as { id: string; name: string; dist: string; rank: string; color: string; isCurrent: boolean };
-      results.push({
+      const isInner = ["mercury", "venus", "earth", "mars"].includes(data.id);
+
+      rawProjections.push({
         id: data.id,
         name: data.name,
         dist: data.dist,
         rank: data.rank,
         color: data.color,
-        isCurrent: data.isCurrent,
-        x: (projected.x * 0.5 + 0.5) * w,
-        y: (-projected.y * 0.5 + 0.5) * h,
+        isCurrent: data.id === this.selectedOrbitPlanetId,
+        isInnerPlanet: isInner,
+        projX: (projected.x * 0.5 + 0.5) * w,
+        projY: (-projected.y * 0.5 + 0.5) * h,
       });
     });
+
+    // Collision-avoidance & vertical/horizontal staggering calculation
+    const results: OrbitPlanetPosition[] = [];
+    rawProjections.forEach((p, idx) => {
+      let offsetX = 0;
+      let offsetY = 0;
+
+      // Stagger inner planets when zoomed far out
+      if (zoomLevel > 9.5 && p.isInnerPlanet) {
+        if (p.id === "mercury") { offsetY = -28; offsetX = -18; }
+        else if (p.id === "venus") { offsetY = 28; offsetX = 18; }
+        else if (p.id === "earth") { offsetY = -34; offsetX = 24; }
+        else if (p.id === "mars") { offsetY = 34; offsetX = -24; }
+      }
+
+      // Check collision against previous processed planet labels
+      for (let j = 0; j < idx; j += 1) {
+        const prev = results[j];
+        const dx = Math.abs((p.projX + offsetX) - (prev.x + prev.offsetX));
+        const dy = Math.abs((p.projY + offsetY) - (prev.y + prev.offsetY));
+        if (dx < 75 && dy < 32) {
+          offsetY += (p.projY >= prev.y ? 32 : -32);
+          offsetX += (p.projX >= prev.x ? 25 : -25);
+        }
+      }
+
+      results.push({
+        id: p.id,
+        name: p.name,
+        dist: p.dist,
+        rank: p.rank,
+        color: p.color,
+        isCurrent: p.isCurrent,
+        isInnerPlanet: p.isInnerPlanet,
+        x: p.projX,
+        y: p.projY,
+        offsetX,
+        offsetY,
+        zoomLevel,
+      });
+    });
+
     return results;
   }
 
