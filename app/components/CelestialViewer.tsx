@@ -293,7 +293,7 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
               } as React.CSSProperties}
             >
               <svg width="460" height="90" viewBox="-230 -45 460 90" className="atmosphere-arc-svg">
-                <path id={`arc-${ap.id}`} d={`M -210 ${ap.arcOffset} A ${ap.arcRadius} ${ap.arcRadius} 0 0 1 210 ${ap.arcOffset}`} fill="none" />
+                <path id={`arc-${ap.id}`} d={`M -210 0 A ${ap.arcRadius} ${ap.arcRadius} 0 0 1 210 0`} fill="none" />
                 <text fill="currentColor">
                   <textPath href={`#arc-${ap.id}`} startOffset="50%" textAnchor="middle">
                     {ap.name}
