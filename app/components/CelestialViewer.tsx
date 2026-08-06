@@ -63,8 +63,19 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
             setSelected(hotspot);
             if (hotspot?.id === "atmosphere") {
               setAtmosphere(true);
+              setContinents(false);
+              viewer?.setAtmosphere(true);
+              viewer?.setContinents(false);
+            } else if (hotspot?.id === "continents") {
+              setContinents(true);
+              setAtmosphere(false);
+              viewer?.setContinents(true);
+              viewer?.setAtmosphere(false);
             } else if (!hotspot) {
               setAtmosphere(false);
+              setContinents(false);
+              viewer?.setAtmosphere(false);
+              viewer?.setContinents(false);
             }
           },
           onReady: setReady,
@@ -90,8 +101,10 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
   useEffect(() => {
     queueMicrotask(() => {
       setAtmosphere(false);
+      setContinents(false);
     });
     viewerRef.current?.setAtmosphere(false);
+    viewerRef.current?.setContinents(false);
     viewerRef.current?.setObject(object);
   }, [object]);
   useEffect(() => viewerRef.current?.setAutoRotate(autoRotate), [autoRotate]);
@@ -108,12 +121,20 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
   const toggleAtmosphere = () => {
     const next = !atmosphere;
     setAtmosphere(next);
+    if (next) {
+      setContinents(false);
+      viewerRef.current?.setContinents(false);
+    }
     viewerRef.current?.setAtmosphere(next);
     showStatus(next ? "3D Atmosphere Shells active" : "Surface view restored");
   };
   const toggleContinents = () => {
     const next = !continents;
     setContinents(next);
+    if (next) {
+      setAtmosphere(false);
+      viewerRef.current?.setAtmosphere(false);
+    }
     viewerRef.current?.setContinents(next);
     showStatus(next ? "Continents & Oceans view active" : "Surface view restored");
   };
