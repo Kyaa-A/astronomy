@@ -286,7 +286,9 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
               key={ap.id}
               className="atmosphere-shell-tag"
               style={{
-                transform: `translate3d(${ap.x}px, ${ap.y}px, 0) scale(${ap.scale})`,
+                left: `${ap.x}px`,
+                top: `${ap.y}px`,
+                transform: `translate(-50%, -50%) scale(${ap.scale})`,
                 color: ap.color,
               } as React.CSSProperties}
             >
