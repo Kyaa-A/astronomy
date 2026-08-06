@@ -591,7 +591,7 @@ export class CelestialViewer {
     const isEarth = object.id === "earth";
     const layerDefs = isEarth ? [
       { name: "Crust", radius: 2.0, color: "#54b8ff", emissive: 0x000000, roughness: 0.78, useTexture: true },
-      { name: "Mantle (slowly convecting solid rock)", radius: 1.65, color: "#b86a28", emissive: 0x000000, roughness: 0.7, useTexture: false },
+      { name: "Mantle", radius: 1.65, color: "#b86a28", emissive: 0x000000, roughness: 0.7, useTexture: false },
       { name: "Liquid Outer Core", radius: 1.15, color: "#ff4400", emissive: 0xaa2200, roughness: 0.3, useTexture: false },
       { name: "Solid Inner Core", radius: 0.58, color: "#fff4ad", emissive: 0xffaa00, roughness: 0.2, useTexture: false },
     ] : [
