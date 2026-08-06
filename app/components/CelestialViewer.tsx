@@ -64,12 +64,19 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
             if (hotspot?.id === "atmosphere") {
               setAtmosphere(true);
               setContinents(false);
+              setLayers(false);
             } else if (hotspot?.id === "continents") {
               setContinents(true);
               setAtmosphere(false);
+              setLayers(false);
+            } else if (hotspot?.id === "core") {
+              setLayers(true);
+              setAtmosphere(false);
+              setContinents(false);
             } else if (!hotspot) {
               setAtmosphere(false);
               setContinents(false);
+              setLayers(false);
             }
           },
           onReady: setReady,
@@ -135,6 +142,12 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
   const toggleLayers = () => {
     const next = !layers;
     setLayers(next);
+    if (next) {
+      setAtmosphere(false);
+      setContinents(false);
+      viewerRef.current?.setAtmosphere(false);
+      viewerRef.current?.setContinents(false);
+    }
     viewerRef.current?.setLayers(next);
     showStatus(next ? "Internal structure revealed" : "Surface view restored");
   };
