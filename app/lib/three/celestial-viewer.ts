@@ -619,8 +619,8 @@ export class CelestialViewer {
       this.controls.minDistance = 3.6;
       this.applyModes();
       // Position Earth top limb in bottom half of screen, centered at X = 0
-      const topTarget = new THREE.Vector3(0, 1.45, 0);
-      const topCamera = new THREE.Vector3(0, 2.05, 8.4);
+      const topTarget = new THREE.Vector3(0, 1.6, 0);
+      const topCamera = new THREE.Vector3(0, 2.2, 6.2);
       this.tweenCamera(topCamera, topTarget);
     } else {
       this.controls.enableRotate = true;
