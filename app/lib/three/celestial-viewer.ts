@@ -811,12 +811,12 @@ export class CelestialViewer {
     const distance = this.camera.position.distanceTo(this.controls.target);
     const scale = THREE.MathUtils.clamp(7.5 / distance, 0.65, 2.0);
 
-    // Top-to-bottom positions landing accurately down the vertical center line of each concentric ring
+    // Top-to-bottom positions landing accurately over each cutaway layer ring on the left side
     const labelOffsets = [
-      new THREE.Vector3(0.0, 1.60, 0.4), // Crust & Surface
-      new THREE.Vector3(0.0, 1.00, 0.4), // Convecting Mantle
-      new THREE.Vector3(0.0, 0.40, 0.4), // Liquid Outer Core
-      new THREE.Vector3(0.0, -0.20, 0.4), // Solid Inner Core
+      new THREE.Vector3(-0.10, 1.05, -1.25), // Crust & Surface (outer crust ring)
+      new THREE.Vector3(-0.10, 0.45, -0.85), // Convecting Mantle (brown mantle ring)
+      new THREE.Vector3(-0.10, -0.10, -0.45), // Liquid Outer Core (orange outer core ring)
+      new THREE.Vector3(-0.10, -0.55, -0.12), // Solid Inner Core (central inner core)
     ];
 
     return this.layerMeshes.map((mesh, index) => {
