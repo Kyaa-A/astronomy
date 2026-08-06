@@ -900,9 +900,6 @@ export class CelestialViewer {
   clearSelection() {
     if (this.selectedMarker) this.selectedMarker.scale.setScalar(this.selectedMarker.userData.baseScale ?? 0.28);
     this.selectedMarker = null;
-    if (this.atmosphereVisible) {
-      this.setAtmosphere(false);
-    }
     this.callbacks.onSelect(null);
   }
 
@@ -938,6 +935,10 @@ export class CelestialViewer {
 
     if (hotspot.id === "atmosphere") {
       this.setAtmosphere(true);
+      return;
+    }
+    if (hotspot.id === "continents") {
+      this.setContinents(true);
       return;
     }
 

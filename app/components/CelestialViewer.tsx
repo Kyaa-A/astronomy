@@ -64,18 +64,12 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
             if (hotspot?.id === "atmosphere") {
               setAtmosphere(true);
               setContinents(false);
-              viewer?.setAtmosphere(true);
-              viewer?.setContinents(false);
             } else if (hotspot?.id === "continents") {
               setContinents(true);
               setAtmosphere(false);
-              viewer?.setContinents(true);
-              viewer?.setAtmosphere(false);
             } else if (!hotspot) {
               setAtmosphere(false);
               setContinents(false);
-              viewer?.setAtmosphere(false);
-              viewer?.setContinents(false);
             }
           },
           onReady: setReady,
