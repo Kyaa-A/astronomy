@@ -56,11 +56,11 @@ export type AtmospherePosition = {
 };
 
 const ATMOSPHERE_LAYERS_3D = [
-  { id: "troposphere", name: "Troposphere", shellRadius: 2.14, labelRadius: 2.07, color: 0x5ee0a8, opacity: 0.35, range: "0–12 km (0–7.5 mi)", temp: "62°F to -60°F", feature: "Weather & Life Zone" },
-  { id: "stratosphere", name: "Stratosphere", shellRadius: 2.30, labelRadius: 2.22, color: 0x48c9ff, opacity: 0.30, range: "12–50 km (7.5–31 mi)", temp: "-60°F to 5°F", feature: "Ozone Shield (O₃)" },
-  { id: "mesosphere", name: "Mesosphere", shellRadius: 2.50, labelRadius: 2.40, color: 0x8668ff, opacity: 0.25, range: "50–85 km (31–53 mi)", temp: "5°F to -148°F", feature: "Coldest Layer (-90°C)" },
-  { id: "thermosphere", name: "Thermosphere", shellRadius: 2.76, labelRadius: 2.63, color: 0x54d3ff, opacity: 0.20, range: "85–690 km (53–430 mi)", temp: "930°F to 3,600°F", feature: "Auroras & Kármán Line (100 km)" },
-  { id: "exosphere", name: "Exosphere", shellRadius: 3.08, labelRadius: 2.92, color: 0x6174ff, opacity: 0.15, range: "690–10,000 km (430–6,200 mi)", temp: "Near Absolute Zero", feature: "Deep Space Fringe" },
+  { id: "troposphere", name: "Troposphere", shellRadius: 2.13, labelRadius: 2.065, color: 0x5ee0a8, opacity: 0.35, range: "0–12 km (0–7.5 mi)", temp: "62°F to -60°F", feature: "Weather & Life Zone" },
+  { id: "stratosphere", name: "Stratosphere", shellRadius: 2.29, labelRadius: 2.21, color: 0x48c9ff, opacity: 0.30, range: "12–50 km (7.5–31 mi)", temp: "-60°F to 5°F", feature: "Ozone Shield (O₃)" },
+  { id: "mesosphere", name: "Mesosphere", shellRadius: 2.48, labelRadius: 2.385, color: 0x8668ff, opacity: 0.25, range: "50–85 km (31–53 mi)", temp: "5°F to -148°F", feature: "Coldest Layer (-90°C)" },
+  { id: "thermosphere", name: "Thermosphere", shellRadius: 2.72, labelRadius: 2.60, color: 0x54d3ff, opacity: 0.20, range: "85–690 km (53–430 mi)", temp: "930°F to 3,600°F", feature: "Auroras & Kármán Line (100 km)" },
+  { id: "exosphere", name: "Exosphere", shellRadius: 3.00, labelRadius: 2.86, color: 0x6174ff, opacity: 0.15, range: "690–10,000 km (430–6,200 mi)", temp: "Near Absolute Zero", feature: "Deep Space Fringe" },
 ] as const;
 
 const LAYER_NAMES = ["Crust", "Mantle", "Core"] as const;
@@ -615,9 +615,9 @@ export class CelestialViewer {
       this.controls.maxDistance = 15;
       this.controls.minDistance = 3.6;
       this.applyModes();
-      // Target upper curve of Earth close up so Earth is big and fills screen dramatically
-      const topTarget = new THREE.Vector3(0, 1.15, 0);
-      const topCamera = new THREE.Vector3(0, 1.85, 5.8);
+      // Target upper curve of Earth with upward tilted POV and galaxy space background at top
+      const topTarget = new THREE.Vector3(0, 0.88, 0);
+      const topCamera = new THREE.Vector3(0, 1.48, 6.2);
       this.tweenCamera(topCamera, topTarget);
     } else {
       this.controls.enableRotate = true;
