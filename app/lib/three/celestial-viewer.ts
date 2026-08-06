@@ -278,6 +278,7 @@ export class CelestialViewer {
   private layerGroup = new THREE.Group();
   private orbitGroup = new THREE.Group();
   private atmosphereGroup = new THREE.Group();
+  private magnetosphereGroup = new THREE.Group();
   private raycaster = new THREE.Raycaster();
   private pointer = new THREE.Vector2();
   private resizeObserver: ResizeObserver;
@@ -297,6 +298,7 @@ export class CelestialViewer {
   private layersVisible = false;
   private atmosphereVisible = false;
   private continentsVisible = false;
+  private magnetosphereVisible = false;
   private relativeScale = false;
   private visible = true;
   private disposed = false;
@@ -345,8 +347,10 @@ export class CelestialViewer {
 
     this.scene.add(this.world);
     this.world.add(this.body, this.markerGroup, this.layerGroup, this.orbitGroup, this.atmosphereGroup);
+    this.body.add(this.magnetosphereGroup);
     this.buildEnvironment();
     this.createAtmosphereLayers();
+    this.createMagnetosphere();
 
     const canvas = this.renderer.domElement;
     canvas.addEventListener("pointerdown", this.onPointerDown);
@@ -553,6 +557,34 @@ export class CelestialViewer {
     });
   }
 
+  private createMagnetosphere() {
+    this.magnetosphereGroup.clear();
+    const loops = 16;
+    const pointsPerLoop = 64;
+
+    for (let i = 0; i < loops; i++) {
+      const angle = (i / loops) * Math.PI * 2;
+      const points: THREE.Vector3[] = [];
+      for (let j = 0; j <= pointsPerLoop; j++) {
+        const t = (j / pointsPerLoop) * Math.PI;
+        const r = PLANET_RADIUS * (1.1 + 1.8 * Math.sin(t));
+        const x = r * Math.sin(t) * Math.cos(angle);
+        const z = r * Math.sin(t) * Math.sin(angle);
+        const y = PLANET_RADIUS * 1.6 * Math.cos(t);
+        points.push(new THREE.Vector3(x, y, z));
+      }
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const material = new THREE.LineBasicMaterial({
+        color: 0x9b7bff,
+        transparent: true,
+        opacity: 0.55,
+      });
+      const line = new THREE.Line(geometry, material);
+      this.magnetosphereGroup.add(line);
+    }
+    this.magnetosphereGroup.visible = false;
+  }
+
   private createInternalLayers(object: CelestialObject) {
     const palette = object.kind === "star" ? LAYER_COLORS.star : LAYER_COLORS.default;
     this.layerMeshes = [];
@@ -609,10 +641,11 @@ export class CelestialViewer {
   }
 
   private applyModes() {
-    this.markerGroup.visible = this.labelsVisible && !this.layersVisible && !this.orbiting && !this.atmosphereVisible;
+    this.markerGroup.visible = this.labelsVisible && !this.layersVisible && !this.orbiting && !this.atmosphereVisible && !this.continentsVisible && !this.magnetosphereVisible;
     this.layerGroup.visible = this.layersVisible && !this.orbiting;
     this.orbitGroup.visible = this.orbiting;
     this.atmosphereGroup.visible = this.atmosphereVisible && !this.orbiting;
+    this.magnetosphereGroup.visible = this.magnetosphereVisible && !this.orbiting;
     this.body.visible = !this.layersVisible && !this.orbiting;
     const scale = this.relativeScale && this.current
       ? THREE.MathUtils.clamp(0.58 + Math.log10(this.current.diameterKm / 3_475) * 0.24, 0.52, 1.38)
@@ -663,6 +696,15 @@ export class CelestialViewer {
 
   setContinents(enabled: boolean) {
     this.continentsVisible = enabled;
+    if (enabled) {
+      this.autoRotate = true;
+    }
+    this.applyModes();
+  }
+
+  setMagnetosphere(enabled: boolean) {
+    this.magnetosphereVisible = enabled;
+    this.magnetosphereGroup.visible = enabled;
     if (enabled) {
       this.autoRotate = true;
     }
@@ -939,6 +981,14 @@ export class CelestialViewer {
     }
     if (hotspot.id === "continents") {
       this.setContinents(true);
+      return;
+    }
+    if (hotspot.id === "magnetosphere") {
+      this.setMagnetosphere(true);
+      return;
+    }
+    if (hotspot.id === "core") {
+      this.setLayers(true);
       return;
     }
 
