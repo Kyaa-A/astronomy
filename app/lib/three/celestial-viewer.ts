@@ -3,7 +3,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import type { CelestialHotspot, CelestialObject } from "../celestial-data";
 
 export type LabelPosition = { id: string; name: string; x: number; y: number; behind: boolean };
-export type LayerPosition = { name: string; color: string; x: number; y: number };
+export type LayerPosition = { name: string; color: string; x: number; y: number; scale?: number };
 
 type ViewerCallbacks = {
   onSelect: (hotspot: CelestialHotspot | null) => void;
@@ -95,14 +95,7 @@ const ATMOSPHERE_LAYERS_3D = [
   { id: "exosphere", name: "Exosphere", shellRadius: 3.54, labelRadius: 3.34, color: 0x6174ff, opacity: 0.15, range: "690–10,000 km (430–6,200 mi)", temp: "Near Absolute Zero", feature: "Deep Space Fringe" },
 ] as const;
 
-const LAYER_NAMES = ["Crust", "Mantle", "Core"] as const;
-const LAYER_COLORS = {
-  star: ["#fff7b0", "#ffae38", "#d74515"],
-  default: ["#8295b3", "#d98638", "#ee4623"],
-} as const;
 
-
-const LAYER_OFFSETS = [0, 0.9, 1.8] as const;
 
 function seededRandom(seed: number) {
   let value = seed >>> 0;
@@ -586,17 +579,37 @@ export class CelestialViewer {
   }
 
   private createInternalLayers(object: CelestialObject) {
-    const palette = object.kind === "star" ? LAYER_COLORS.star : LAYER_COLORS.default;
     this.layerMeshes = [];
-    [1.42, 0.96, 0.5].forEach((radius, index) => {
-      const mesh = new THREE.Mesh(
-        new THREE.SphereGeometry(radius, 48, 32, Math.PI * 0.12, Math.PI * 1.48),
-        new THREE.MeshStandardMaterial({ color: palette[index], roughness: 0.76, side: THREE.DoubleSide }),
-      );
-      mesh.position.x = 0;
-      mesh.userData.layerName = LAYER_NAMES[index];
-      mesh.userData.layerColor = palette[index];
-      mesh.userData.targetX = 0;
+    this.layerGroup.clear();
+
+    const isEarth = object.id === "earth";
+    const layerDefs = isEarth ? [
+      { name: "Crust & Surface", radius: 2.0, color: "#54b8ff", emissive: 0x000000, roughness: 0.8 },
+      { name: "Convecting Mantle", radius: 1.65, color: "#b86a28", emissive: 0x000000, roughness: 0.7 },
+      { name: "Liquid Outer Core", radius: 1.15, color: "#ff4400", emissive: 0xaa2200, roughness: 0.3 },
+      { name: "Solid Inner Core", radius: 0.58, color: "#fff4ad", emissive: 0xffaa00, roughness: 0.2 },
+    ] : [
+      { name: "Crust & Surface", radius: 2.0, color: "#8c5828", emissive: 0x000000, roughness: 0.8 },
+      { name: "Mantle", radius: 1.45, color: "#cc7733", emissive: 0x000000, roughness: 0.7 },
+      { name: "Core", radius: 0.75, color: "#ffaa00", emissive: 0x663300, roughness: 0.3 },
+    ];
+
+    layerDefs.forEach((def, index) => {
+      const isInnerMost = index === layerDefs.length - 1;
+      const geom = isInnerMost
+        ? new THREE.SphereGeometry(def.radius, 48, 36)
+        : new THREE.SphereGeometry(def.radius, 64, 48, 0, Math.PI * 1.5);
+
+      const mat = new THREE.MeshStandardMaterial({
+        color: def.color,
+        emissive: def.emissive,
+        emissiveIntensity: def.emissive ? 0.6 : 0,
+        roughness: def.roughness,
+        side: THREE.DoubleSide,
+      });
+
+      const mesh = new THREE.Mesh(geom, mat);
+      mesh.userData = { layerName: def.name, layerColor: def.color, radius: def.radius };
       this.layerGroup.add(mesh);
       this.layerMeshes.push(mesh);
     });
@@ -713,8 +726,19 @@ export class CelestialViewer {
 
   setLayers(enabled: boolean) {
     this.layersVisible = enabled;
+    if (enabled) {
+      this.autoRotate = false;
+      this.controls.enableRotate = true;
+      const target = new THREE.Vector3(0, 0, 0);
+      const cam = new THREE.Vector3(-2.8, 1.8, 6.2);
+      this.tweenCamera(cam, target);
+      this.body.rotation.y = THREE.MathUtils.degToRad(-35);
+      this.layerGroup.rotation.y = THREE.MathUtils.degToRad(-35);
+    } else {
+      this.controls.enableRotate = true;
+      this.tweenCamera(HOME_CAMERA.clone(), HOME_TARGET.clone());
+    }
     this.applyModes();
-    this.animateLayers(enabled);
   }
   setRelativeScale(enabled: boolean) { this.relativeScale = enabled; this.applyModes(); }
 
@@ -774,14 +798,21 @@ export class CelestialViewer {
     if (!this.layersVisible) return [];
     const w = this.container.clientWidth;
     const h = this.container.clientHeight;
+    const distance = this.camera.position.distanceTo(this.controls.target);
+    const scale = THREE.MathUtils.clamp(7.5 / distance, 0.65, 2.0);
+
     return this.layerMeshes.map((mesh) => {
-      const worldPos = mesh.getWorldPosition(new THREE.Vector3());
-      const projected = worldPos.clone().project(this.camera);
+      const r = (mesh.userData.radius as number) ?? 1.0;
+      const localPos = new THREE.Vector3(r * 0.72, r * 0.35, r * 0.72);
+      localPos.applyEuler(this.layerGroup.rotation);
+      const worldPos = this.body.getWorldPosition(new THREE.Vector3()).add(localPos);
+      const projected = worldPos.project(this.camera);
       return {
         name: mesh.userData.layerName as string,
         color: mesh.userData.layerColor as string,
         x: (projected.x * 0.5 + 0.5) * w,
         y: (-projected.y * 0.5 + 0.5) * h,
+        scale,
       };
     });
   }
@@ -899,23 +930,6 @@ export class CelestialViewer {
     this.controls.target.lerp(this.cameraTarget.target, speed);
   }
 
-  private animateLayers(open: boolean) {
-    cancelAnimationFrame(this.layerAnimFrame);
-    const start = performance.now();
-    const duration = 600;
-    const targets = this.layerMeshes.map((_, i) => open ? LAYER_OFFSETS[i] : 0);
-    const origins = this.layerMeshes.map((m) => m.position.x);
-    const step = () => {
-      const t = Math.min(1, (performance.now() - start) / duration);
-      const ease = t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
-      this.layerMeshes.forEach((mesh, i) => {
-        mesh.position.x = origins[i] + (targets[i] - origins[i]) * ease;
-      });
-      if (t < 1) this.layerAnimFrame = requestAnimationFrame(step);
-    };
-    this.layerAnimFrame = requestAnimationFrame(step);
-  }
-
   reset(): { autoRotate: boolean; labels: boolean; layers: boolean; orbit: boolean; relativeScale: boolean } {
     this.autoRotate = true;
     this.labelsVisible = true;
@@ -927,7 +941,6 @@ export class CelestialViewer {
     this.controls.maxDistance = 13;
     this.controls.minDistance = 4.6;
     this.applyModes();
-    this.animateLayers(false);
     const ringDistance = this.current?.visual.rings ? 12.6 : HOME_CAMERA.z;
     const distance = this.container.clientWidth < 600 ? Math.max(11.35, ringDistance) : ringDistance;
     this.tweenCamera(new THREE.Vector3(HOME_CAMERA.x, HOME_CAMERA.y, distance), HOME_TARGET);

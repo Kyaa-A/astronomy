@@ -288,7 +288,16 @@ export function CelestialViewer({ object, autoRotate, onAutoRotate, comparing, o
       {layers && layerPositions.length > 0 && (
         <div className="label-overlay" aria-hidden="true">
           {layerPositions.map((lp) => (
-            <div key={lp.name} className="layer-label" style={{ transform: `translate3d(${lp.x}px, ${lp.y}px, 0)`, "--layer-color": lp.color } as React.CSSProperties}>
+            <div
+              key={lp.name}
+              className="layer-label"
+              style={{
+                left: `${lp.x}px`,
+                top: `${lp.y}px`,
+                transform: `translate(-50%, -50%) scale(${lp.scale ?? 1})`,
+                "--layer-color": lp.color,
+              } as React.CSSProperties}
+            >
               {lp.name}
             </div>
           ))}

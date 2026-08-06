@@ -125,7 +125,7 @@ button:disabled { cursor: not-allowed; opacity: 0.68; }
 .callout-focus-btn:hover { background: rgba(112,220,255,.2); border-color: var(--cyan); color: #fff; }
 
 /* Layer floating labels */
-.layer-label { position: absolute; left: 0; top: 0; pointer-events: none; background: rgba(9,13,32,.9); border: 1px solid var(--line-strong); border-left: 3px solid var(--layer-color, var(--cyan)); border-radius: 5px; padding: 3px 8px; font-size: 9px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: .08em; white-space: nowrap; backdrop-filter: blur(10px); box-shadow: 0 4px 16px #0008; transform: translate(-50%, -50%); }
+.layer-label { position: absolute; pointer-events: none; background: rgba(9,13,32,.9); border: 1px solid var(--line-strong); border-left: 3px solid var(--layer-color, var(--cyan)); border-radius: 5px; padding: 3px 8px; font-size: 9.5px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: .08em; white-space: nowrap; backdrop-filter: blur(10px); box-shadow: 0 4px 16px #0008, 0 0 10px color-mix(in srgb, var(--layer-color, var(--cyan)) 30%, transparent); transition: transform .04s linear; z-index: 12; }
 
 /* Floating orbit planet tags */
 .orbit-planet-tag { position: absolute; left: 0; top: 0; pointer-events: none; display: flex; align-items: center; gap: 5px; background: rgba(5,8,22,.88); border: 1px solid rgba(255,255,255,.14); border-radius: 6px; padding: 2px 7px; font-size: 9px; color: #e1e9fb; white-space: nowrap; backdrop-filter: blur(8px); box-shadow: 0 4px 14px #0008; transform: translate(-50%, -100%); transition: transform .15s ease; }
