@@ -615,9 +615,9 @@ export class CelestialViewer {
       this.controls.maxDistance = 15;
       this.controls.minDistance = 3.6;
       this.applyModes();
-      // Target Earth lower curve with upward tilted POV so atmosphere bands span into dark space
-      const topTarget = new THREE.Vector3(0, 0.45, 0);
-      const topCamera = new THREE.Vector3(0, 1.2, 7.2);
+      // Position Earth curve in bottom ~30% of screen so 70% is spacious atmosphere sky & galaxy
+      const topTarget = new THREE.Vector3(0, -0.65, 0);
+      const topCamera = new THREE.Vector3(0, 0.45, 7.5);
       this.tweenCamera(topCamera, topTarget);
     } else {
       this.controls.enableRotate = true;
